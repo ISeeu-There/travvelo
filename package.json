@@ -1,0 +1,26 @@
+{
+  "name": "tripora-travel",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist",
+    "lint": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.4.0",
+    "gsap": "^3.15.0",
+    "vue": "^3.5.39"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/tsconfig": "^0.9.1",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3",
+    "vue-tsc": "^3.3.5"
+  }
+}

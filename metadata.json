@@ -1,0 +1,6 @@
+{
+  "name": "Tripora Travel",
+  "description": "An elegant bento-grid travel destination showcase with rich interactive sections.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
