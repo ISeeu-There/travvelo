@@ -1,17 +1,26 @@
 <script setup lang="ts">
-import { inject } from 'vue';
+import { inject, computed } from 'vue';
+import { useI18n } from '../i18n';
 
+const { t } = useI18n();
 const openCard = inject<(type: string, data: any, event: MouseEvent) => void>('openCard');
 
 // Service item data matching Section 5 icons
 const services = [
-  { id: 1, title: 'Flight Booking', icon: '✈️' },
-  { id: 2, title: 'Hotel Reservation', icon: '🏨' },
-  { id: 3, title: 'Visa Assistance', icon: '🎫' },
-  { id: 4, title: 'Travel Insurance', icon: '🛡️' },
-  { id: 5, title: 'Tour Guides', icon: '🗺️' },
-  { id: 6, title: '24/7 Support', icon: '📞' }
+  { id: 1, title: 'Flight Booking', icon: '✈️', key: 'flight' },
+  { id: 2, title: 'Hotel Reservation', icon: '🏨', key: 'hotel' },
+  { id: 3, title: 'Visa Assistance', icon: '🎫', key: 'visa' },
+  { id: 4, title: 'Travel Insurance', icon: '🛡️', key: 'insurance' },
+  { id: 5, title: 'Tour Guides', icon: '🗺️', key: 'guides' },
+  { id: 6, title: '24/7 Support', icon: '📞', key: 'support' }
 ];
+
+const translatedServices = computed(() => {
+  return services.map(s => ({
+    ...s,
+    title: t('services.' + s.key)
+  }));
+});
 
 const handleCardClick = (service: any, event: MouseEvent) => {
   if (openCard) {
@@ -30,7 +39,7 @@ const handleCardClick = (service: any, event: MouseEvent) => {
 
     <div class="services__content">
       <div class="services__header">
-        <h2 class="services__title">Our<br><em>Services</em></h2>
+        <h2 class="services__title">{{ t('services.title1') }}<br><em>{{ t('services.title2') }}</em></h2>
         <!-- Decorative paraglider path -->
         <div class="services__paraglider">
           🪂
@@ -38,7 +47,13 @@ const handleCardClick = (service: any, event: MouseEvent) => {
       </div>
 
       <div class="services__grid">
-        <div v-for="service in services" :key="service.id" class="service-item cursor-pointer group" @click="handleCardClick(service, $event)">
+        <div 
+          v-for="(service, idx) in translatedServices" 
+          :key="service.id" 
+          :class="idx % 2 === 0 ? 'float-ambient-1' : 'float-ambient-2'"
+          class="service-item cursor-pointer group" 
+          @click="handleCardClick(service, $event)"
+        >
           <div class="service-item__icon-wrapper transition-all duration-300 group-hover:bg-amber-400 group-hover:scale-110 group-hover:rotate-12">
             <span class="service-item__icon">{{ service.icon }}</span>
           </div>

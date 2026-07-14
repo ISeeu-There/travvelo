@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { inject } from 'vue';
+import { inject, computed } from 'vue';
 import teamYassine from '../assets/team-yassine.png'
 import teamLina from '../assets/team-lina.png'
 import teamAmine from '../assets/team-amine.png'
 import teamSara from '../assets/team-sara.png'
 import teamRiad from '../assets/team-riad.png'
+import { useI18n } from '../i18n';
 
+const { t } = useI18n();
 const openCard = inject<(type: string, data: any, event: MouseEvent) => void>('openCard');
 
 const members = [
@@ -58,13 +60,22 @@ const members = [
     name: 'Riad T.',
     role: 'Operations',
     image: teamRiad,
-    bio: 'Riad handles international logistics, insurance approvals, and private jet chartering operations. The backbone of Tripora.',
+    bio: 'Riad handles international logistics, insurance approvals, and private jet chartering operations. The backbone of Trevvelo.',
     languages: 'Arabic, English, French',
     experienceYears: '10 Years',
     countriesVisited: 41,
     favDest: 'Dubai, UAE'
   }
 ];
+
+const translatedMembers = computed(() => {
+  return members.map(m => ({
+    ...m,
+    role: t('team.member.' + m.id + '.role'),
+    bio: t('team.member.' + m.id + '.bio'),
+    favDest: t('team.member.' + m.id + '.favDest')
+  }));
+});
 
 const handleCardClick = (member: any, event: MouseEvent) => {
   if (openCard) {
@@ -77,7 +88,7 @@ const handleCardClick = (member: any, event: MouseEvent) => {
   <section class="team" id="team">
     <div class="team__header">
       <div class="team__title-wrapper">
-        <h2 class="team__title">Our<br><span class="highlight-circle">Team</span></h2>
+        <h2 class="team__title">{{ t('team.title1') }}<br><span class="highlight-circle">{{ t('team.title2') }}</span></h2>
         <!-- Simple line decoration representing a paper plane path -->
         <svg class="team__plane-path" viewBox="0 0 100 50" fill="none">
           <path d="M5 45 C 20 10, 60 10, 85 20" stroke="#1A1A1A" stroke-width="1.5" stroke-dasharray="4 3"/>
@@ -85,36 +96,42 @@ const handleCardClick = (member: any, event: MouseEvent) => {
         </svg>
       </div>
       <p class="team__subtitle">
-        Passionate travelers working to make your journey perfect. Click any card to meet.
+        {{ t('team.subtitle') }}
       </p>
     </div>
 
     <div class="team__grid">
       <!-- Founder & CEO -->
-      <div class="team-card team-card--ceo cursor-pointer group" @click="handleCardClick(members[0], $event)">
+      <div class="team-card team-card--ceo cursor-pointer group float-ambient-1" @click="handleCardClick(translatedMembers[0], $event)">
         <div class="team-card__image-container overflow-hidden">
-          <img :src="members[0].image" :alt="members[0].name" class="team-card__img transition-transform duration-500 group-hover:scale-110" />
+          <img :src="translatedMembers[0].image" :alt="translatedMembers[0].name" class="team-card__img transition-transform duration-500 group-hover:scale-110" />
         </div>
         <div class="team-card__info transition-transform duration-300 group-hover:-translate-y-1">
           <h3 class="team-card__name flex items-center justify-between">
-            <span>{{ members[0].name }}</span>
-            <span class="text-[10px] bg-amber-500 text-dark px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Meet</span>
+            <span>{{ translatedMembers[0].name }}</span>
+            <span class="text-[10px] bg-amber-500 text-dark px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold opacity-0 group-hover:opacity-100 transition-opacity">{{ t('nav.meet') }}</span>
           </h3>
-          <p class="team-card__role">{{ members[0].role }}</p>
+          <p class="team-card__role">{{ translatedMembers[0].role }}</p>
           <span class="team-card__dot"></span>
         </div>
       </div>
 
       <!-- Grid for other team members -->
       <div class="team__subgrid">
-        <div v-for="m in members.slice(1)" :key="m.id" class="team-card cursor-pointer group" @click="handleCardClick(m, $event)">
+        <div 
+          v-for="(m, idx) in translatedMembers.slice(1)" 
+          :key="m.id" 
+          :class="idx % 2 === 0 ? 'float-ambient-2' : 'float-ambient-1'"
+          class="team-card cursor-pointer group" 
+          @click="handleCardClick(m, $event)"
+        >
           <div class="team-card__image-container overflow-hidden">
             <img :src="m.image" :alt="m.name" class="team-card__img transition-transform duration-500 group-hover:scale-110" />
           </div>
           <div class="team-card__info transition-transform duration-300 group-hover:-translate-y-1">
             <h3 class="team-card__name flex items-center justify-between">
               <span>{{ m.name }}</span>
-              <span class="text-[9px] bg-amber-500 text-dark px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Meet</span>
+              <span class="text-[9px] bg-amber-500 text-dark px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold opacity-0 group-hover:opacity-100 transition-opacity">{{ t('nav.meet') }}</span>
             </h3>
             <p class="team-card__role">{{ m.role }}</p>
           </div>

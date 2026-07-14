@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from '../i18n';
+
+const { t } = useI18n();
+
 // Interactive elements for socials or contacting
 const handleSocialClick = (platform: string) => {
   console.log(`Navigating to ${platform}`)
@@ -10,7 +14,7 @@ const handleSocialClick = (platform: string) => {
     <div class="contact__content">
       <div class="contact__text">
         <h2 class="contact__title">
-          Let's<br>Plan Your<br><span class="highlight-underline">Next Adventure!</span>
+          {{ t('contact.title1') }}<br><span class="highlight-underline">{{ t('contact.title2') }}</span>
         </h2>
         
         <div class="contact__info">
@@ -18,13 +22,13 @@ const handleSocialClick = (platform: string) => {
             <span class="contact__icon">📞</span>
             <span class="contact__detail">+213 555 123 456</span>
           </a>
-          <a href="mailto:hello@tripora.com" class="contact__item">
+          <a href="mailto:hello@trevvelo.com" class="contact__item">
             <span class="contact__icon">✉️</span>
-            <span class="contact__detail">hello@tripora.com</span>
+            <span class="contact__detail">hello@trevvelo.com</span>
           </a>
           <div class="contact__item">
             <span class="contact__icon">📍</span>
-            <span class="contact__detail">Alger, Algeria</span>
+            <span class="contact__detail">Algiers, Algeria</span>
           </div>
         </div>
       </div>

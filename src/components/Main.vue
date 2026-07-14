@@ -7,7 +7,24 @@ import ProgramSection from "./ProgramSection.vue";
 import DestinationList from "./DestinationList.vue";
 import ServicesSection from "./ServicesSection.vue";
 import ContactSection from "./ContactSection.vue";
+import SponsorsSection from "./SponsorsSection.vue";
 import ExpandedCardModal from "./ExpandedCardModal.vue";
+import { useI18n } from "../i18n";
+
+const { locale, setLocale, t } = useI18n();
+
+const isDark = ref(false);
+
+const toggleTheme = () => {
+  isDark.value = !isDark.value;
+  if (isDark.value) {
+    document.documentElement.classList.add('dark-mode');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.documentElement.classList.remove('dark-mode');
+    localStorage.setItem('theme', 'light');
+  }
+};
 
 // Active Card state for expansion
 const activeCard = ref<{
@@ -100,6 +117,17 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true });
   mouseFrameId = requestAnimationFrame(updateMousePosition);
 
+  // Load saved theme preference
+  const savedTheme = localStorage.getItem('theme');
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+    isDark.value = true;
+    document.documentElement.classList.add('dark-mode');
+  } else {
+    isDark.value = false;
+    document.documentElement.classList.remove('dark-mode');
+  }
+
   // Smooth page intro timeline
   gsap.from('.parent > div', {
     opacity: 0,
@@ -111,6 +139,29 @@ onMounted(() => {
     duration: 1.1,
     ease: 'power3.out',
     clearProps: 'all'
+  });
+
+  // Self-drawing logo path logic (handled beautifully in CSS as well, reinforced here with GSAP)
+  gsap.fromTo('.logo-path, .logo-path-accent', 
+    { strokeDashoffset: 100 }, 
+    { strokeDashoffset: 0, duration: 1.5, stagger: 0.2, ease: 'power2.out' }
+  );
+
+  // Premium clip-path reveal of the hero image
+  gsap.fromTo('.hero__bg img', 
+    { clipPath: 'inset(100% 0 0 0)', scale: 1.2 }, 
+    { clipPath: 'inset(0% 0% 0% 0%)', scale: 1.05, duration: 1.8, ease: 'power4.inOut', delay: 0.2 }
+  );
+
+  // Destination cards stagger entrance on load
+  gsap.from('.dest-card', {
+    opacity: 0,
+    y: 60,
+    scale: 0.9,
+    stagger: 0.15,
+    duration: 1.2,
+    ease: 'power3.out',
+    delay: 0.8
   });
 });
 
@@ -129,26 +180,55 @@ onUnmounted(() => {
   <header class="floating-navbar" :class="{ 'navbar-hidden': !navbarVisible }">
     <div class="navbar-wrapper">
       <div class="navbar-brand-group">
-        <svg class="brand-logo" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#F5A623"/>
-          <path d="M2 17l10 5 10-5" stroke="#F5A623" stroke-width="2" fill="none"/>
+        <!-- High-quality self-drawing line-drawing brand mark with SVG dash-array -->
+        <svg class="brand-logo" viewBox="0 0 50 50">
+          <path class="logo-path" d="M15 15 L25 35 L35 15" stroke="#F5A623" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path class="logo-path-accent" d="M10 22 L25 40 L40 22" stroke="#E8951A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/>
         </svg>
-        <span class="brand-name">Tripora</span>
+        <span class="brand-name text-xl font-extrabold tracking-tight">{{ t('nav.logo') }}</span>
       </div>
 
-      <nav class="nav-links">
-        <a href="#hero" @click="smoothScrollTo('hero', $event)" :class="{ active: activeSection === 'hero' }">Home</a>
-        <a href="#team" @click="smoothScrollTo('team', $event)" :class="{ active: activeSection === 'team' }">Team</a>
-        <a href="#programs" @click="smoothScrollTo('programs', $event)" :class="{ active: activeSection === 'programs' }">Programs</a>
-        <a href="#destinations" @click="smoothScrollTo('destinations', $event)" :class="{ active: activeSection === 'destinations' }">Destinations</a>
-        <a href="#services" @click="smoothScrollTo('services', $event)" :class="{ active: activeSection === 'services' }">Services</a>
-        <a href="#contact" @click="smoothScrollTo('contact', $event)" :class="{ active: activeSection === 'contact' }">Contact</a>
-      </nav>
+      <div class="nav-right-group">
+        <!-- Elegant theme toggle -->
+        <button 
+          @click="toggleTheme" 
+          class="theme-toggle-btn-circle" 
+          :aria-label="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+        >
+          <span v-if="isDark" class="theme-icon">☀️</span>
+          <span v-else class="theme-icon">🌙</span>
+        </button>
 
-      <div class="nav-cta-wrap">
-        <a href="#contact" @click="smoothScrollTo('contact', $event)" class="nav-premium-btn">
-          Consult Now
-        </a>
+        <!-- Premium pills language switcher -->
+        <div dir="ltr" class="lang-switcher">
+          <button 
+            @click="setLocale('en')" 
+            :class="{ active: locale === 'en' }"
+            class="lang-btn"
+          >
+            EN
+          </button>
+          <button 
+            @click="setLocale('fr')" 
+            :class="{ active: locale === 'fr' }"
+            class="lang-btn"
+          >
+            FR
+          </button>
+          <button 
+            @click="setLocale('ar')" 
+            :class="{ active: locale === 'ar' }"
+            class="lang-btn lang-btn-ar"
+          >
+            عربي
+          </button>
+        </div>
+
+        <div class="nav-cta-wrap">
+          <a href="#contact" @click="smoothScrollTo('contact', $event)" class="nav-premium-btn">
+            {{ t('nav.consult') }}
+          </a>
+        </div>
       </div>
     </div>
     <!-- Bottom line reading progress -->
@@ -186,6 +266,9 @@ onUnmounted(() => {
       <ContactSection />
     </div>
   </div>
+
+  <!-- Animated Sponsors/Partners Section -->
+  <SponsorsSection />
 
   <!-- Fullscreen GSAP Expansion Overlay detailed pages -->
   <ExpandedCardModal :activeCard="activeCard" @close="closeCard" />
@@ -325,6 +408,116 @@ onUnmounted(() => {
 .parent {
   padding-top: 80px; /* Space for floating navbar */
   transition: filter 0.5s;
+}
+
+/* Nav right group, Language Switcher & Buttons */
+.nav-right-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  background: #F1EBE3;
+  border: 1px solid rgba(229, 224, 216, 0.8);
+  border-radius: 30px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.lang-btn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-light);
+  padding: 4px 12px;
+  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lang-btn:hover {
+  color: var(--color-dark);
+}
+
+.lang-btn.active {
+  background: var(--color-dark);
+  color: var(--color-white);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.lang-btn-ar {
+  font-family: sans-serif;
+}
+
+/* Responsive adjustments for narrow viewports */
+@media (max-width: 480px) {
+  .floating-navbar {
+    padding: 8px 12px;
+  }
+  .brand-name {
+    font-size: 0.95rem;
+  }
+  .nav-right-group {
+    gap: 8px;
+  }
+  .lang-switcher {
+    padding: 2px;
+    gap: 2px;
+  }
+  .lang-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  .nav-premium-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Elegant theme toggle */
+.theme-toggle-btn-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(229, 224, 216, 0.8);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  outline: none;
+}
+
+.theme-toggle-btn-circle:hover {
+  transform: scale(1.1) rotate(15deg);
+  border-color: var(--color-primary);
+  background: rgba(241, 235, 227, 0.4);
+}
+
+.theme-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+:global(.dark-mode) .theme-toggle-btn-circle {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(45, 45, 45, 0.4);
+}
+
+:global(.dark-mode) .theme-toggle-btn-circle:hover {
+  border-color: var(--color-primary);
+  background: rgba(45, 45, 45, 0.8);
 }
 
 /* Styling matches parent grids in style.css */

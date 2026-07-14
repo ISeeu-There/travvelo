@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import heroImg from '../assets/hero.jpg'
+import { useI18n } from '../i18n';
+
+const { t } = useI18n();
 
 const travelersCount = ref(100);
 
@@ -39,13 +42,10 @@ const scrollToDestinations = (e: Event) => {
     <!-- Navbar -->
     <nav class="navbar">
       <div class="navbar__brand">
-        <svg class="navbar__logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#F5A623"/>
-          <path d="M2 17l10 5 10-5" stroke="#F5A623" stroke-width="2" fill="none"/>
-          <path d="M2 12l10 5 10-5" stroke="#F5A623" stroke-width="2" fill="none"/>
-          <path d="M17 4l-2 3h4l-2-3z" fill="#F5A623"/>
+        <svg class="navbar__logo-icon" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path class="logo-path" d="M15 15 L25 35 L35 15" stroke="#F5A623" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
-        <span class="navbar__name">Tripora</span>
+        <span class="navbar__name">{{ t('nav.logo') }}</span>
       </div>
     </nav>
 
@@ -61,16 +61,16 @@ const scrollToDestinations = (e: Event) => {
         <div class="hero__deco-x">✕</div>
 
         <h1 class="hero__title">
-          <span class="hero__title-line">Travel</span>
-          <span class="hero__title-line"><em>More.</em></span>
-          <span class="hero__title-line">Live <em>More.</em></span>
+          <span class="hero__title-line">{{ t('hero.title1') }}</span>
+          <span class="hero__title-line"><em>{{ t('hero.title2') }}</em></span>
+          <span class="hero__title-line"><em>{{ t('hero.title3') }}</em></span>
         </h1>
         <p class="hero__desc">
-          Discover new places, meet new people, and collect unforgettable memories.
+          {{ t('hero.subtitle') }}
         </p>
         <div class="hero__actions">
           <a href="#destinations" @click="scrollToDestinations" class="hero__btn hero__btn--primary transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-2">
-            Explore Now
+            {{ t('hero.exploreBtn') }}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -91,7 +91,7 @@ const scrollToDestinations = (e: Event) => {
             <span class="hero__rating-value">4.9/5</span>
             <span class="hero__stars-icons">★★★★★</span>
           </div>
-          <span class="hero__travelers">{{ travelersCount }}+ Travelers</span>
+          <span class="hero__travelers">{{ travelersCount }}+ {{ t('hero.travelers') }}</span>
         </div>
       </div>
     </div>

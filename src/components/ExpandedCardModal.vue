@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { gsap } from 'gsap';
+import { useI18n } from '../i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   activeCard: {
@@ -34,23 +37,29 @@ const customActivities = ref<string[]>(['Hiking', 'Food Tasting']);
 const activityOptions = ['Hiking', 'Cultural Tours', 'Water Sports', 'Shopping', 'Food Tasting', 'Relaxing'];
 
 // Live Chat State
-const chatMessages = ref([
-  { sender: 'bot', text: 'Hello! I am your Tripora Virtual Assistant. How can I help you today?' }
+interface ChatMessage {
+  sender: 'user' | 'bot';
+  text?: string;
+  textKey?: string;
+}
+
+const chatMessages = ref<ChatMessage[]>([
+  { sender: 'bot', textKey: 'modal.chatInitial' }
 ]);
 const userMessage = ref('');
 const isTyping = ref(false);
 const suggestedChats = [
-  'My flight is delayed, what do I do?',
-  'How do I claim travel insurance?',
-  'What are the visa rules for Japan?',
-  'Emergency local contacts'
+  { key: 'delay', textKey: 'modal.chatSuggest.delay' },
+  { key: 'claim', textKey: 'modal.chatSuggest.claim' },
+  { key: 'rules', textKey: 'modal.chatSuggest.rules' },
+  { key: 'emergency', textKey: 'modal.chatSuggest.emergency' }
 ];
 
 // Visa selector states
 const visaCountry = ref('Japan');
 const visaRequiredDocs = ref<string[]>([]);
-const visaFee = ref('$0');
-const visaProcessing = ref('3-5 Business Days');
+const visaFee = ref('modal.visaFeeJapan');
+const visaProcessing = ref('modal.visaTimeJapan');
 const visaEligibility = ref(95);
 
 // Hotel states
@@ -60,8 +69,8 @@ const roomsCount = ref(1);
 const selectedRoomType = ref('deluxe');
 
 // Flight state
-const flightFrom = ref('Paris (CDG)');
-const flightTo = ref('Tokyo (NRT)');
+const flightFrom = ref('CDG, Paris');
+const flightTo = ref('NRT, Tokyo');
 const flightClass = ref('economy');
 
 // Insurance states
@@ -206,56 +215,62 @@ const calculateLivePrice = () => {
 };
 
 // Chatbot messages responder
-const handleSendMessage = (text?: string) => {
-  const msg = text || userMessage.value;
-  if (!msg.trim()) return;
+const handleSendMessage = (q?: { key: string, textKey: string }) => {
+  const msgText = q ? t(q.textKey) : userMessage.value;
+  if (!msgText.trim()) return;
   
-  chatMessages.value.push({ sender: 'user', text: msg });
-  if (!text) userMessage.value = '';
+  chatMessages.value.push({ sender: 'user', text: msgText });
+  if (!q) userMessage.value = '';
   
   isTyping.value = true;
   
-  // Custom response based on input
-  let response = "Thank you for reaching out! A human agent is being connected to you, but in the meantime: our travel insurance covers up to $100k emergency medical treatment.";
+  let responseKey = 'modal.chatResponseDefault';
+  const query = msgText.toLowerCase();
   
-  const query = msg.toLowerCase();
-  if (query.includes('delay') || query.includes('flight')) {
-    response = "If your flight is delayed over 4 hours, please approach our lounge partners or call our hotline +213 555 123 456. We assist with booking the next available flight immediately and handle carrier compensation claims.";
-  } else if (query.includes('insurance') || query.includes('claim')) {
-    response = "To file an insurance claim, tap the 'Insurance Claim Portal' on your app or email claims@tripora.com with your flight number and medical receipts. Claims are processed within 24 hours.";
-  } else if (query.includes('visa') || query.includes('japan')) {
-    response = "E-visas for Japan are available for EU, USA, and GCC citizens. For other regions, we prepare a complete visa letter packet within 3 working days of your tour booking!";
-  } else if (query.includes('emergency') || query.includes('contact')) {
-    response = "🚨 EMERGENCY CONTACTS:\nTripora Premium Line: +213 555 123 999\nGlobal Assist SOS: +1 800 555 0199\nLocal Support: help@tripora.com";
+  if (q) {
+    if (q.key === 'delay') responseKey = 'modal.chatResponseDelay';
+    else if (q.key === 'claim') responseKey = 'modal.chatResponseInsurance';
+    else if (q.key === 'rules') responseKey = 'modal.chatResponseVisa';
+    else if (q.key === 'emergency') responseKey = 'modal.chatResponseEmergency';
+  } else {
+    if (query.includes('delay') || query.includes('flight') || query.includes('retard') || query.includes('تاخ') || query.includes('تأخ')) {
+      responseKey = 'modal.chatResponseDelay';
+    } else if (query.includes('insurance') || query.includes('claim') || query.includes('assurance') || query.includes('تأمين') || query.includes('تامين')) {
+      responseKey = 'modal.chatResponseInsurance';
+    } else if (query.includes('visa') || query.includes('japan') || query.includes('تأشير') || query.includes('تاشير')) {
+      responseKey = 'modal.chatResponseVisa';
+    } else if (query.includes('emergency') || query.includes('contact') || query.includes('urgence') || query.includes('طوارئ') || query.includes('طوارئ')) {
+      responseKey = 'modal.chatResponseEmergency';
+    }
   }
 
   setTimeout(() => {
     isTyping.value = false;
-    chatMessages.value.push({ sender: 'bot', text: response });
+    chatMessages.value.push({ sender: 'bot', textKey: responseKey });
   }, 1200);
 };
 
 // Handle Visa Selector Data
 watch(visaCountry, (newVal) => {
   if (newVal === 'Japan') {
-    visaRequiredDocs.value = ['Valid Passport (6+ Months)', 'Visa Application Photo', 'Round-trip Flight Ticket', 'Hotel Booking Confirmation'];
-    visaFee.value = '$25';
-    visaProcessing.value = '3-5 Business Days';
+    visaRequiredDocs.value = ['modal.visaDocJapan1', 'modal.visaDocJapan2', 'modal.visaDocJapan3', 'modal.visaDocJapan4'];
+    visaFee.value = 'modal.visaFeeJapan';
+    visaProcessing.value = 'modal.visaTimeJapan';
     visaEligibility.value = 98;
   } else if (newVal === 'Greece') {
-    visaRequiredDocs.value = ['Schengen Application Form', 'Biometric Passport', 'Travel Insurance Coverage', 'Sufficient Bank Statement'];
-    visaFee.value = '$85 (Schengen Fee)';
-    visaProcessing.value = '7-12 Business Days';
+    visaRequiredDocs.value = ['modal.visaDocGreece1', 'modal.visaDocGreece2', 'modal.visaDocGreece3', 'modal.visaDocGreece4'];
+    visaFee.value = 'modal.visaFeeGreece';
+    visaProcessing.value = 'modal.visaTimeGreece';
     visaEligibility.value = 92;
   } else if (newVal === 'Dubai') {
-    visaRequiredDocs.value = ['Passport Copy', 'Passport Size Photo', 'Sponsor/Booking letter', 'Credit Card Authorization'];
-    visaFee.value = '$90';
-    visaProcessing.value = '24-48 Hours';
+    visaRequiredDocs.value = ['modal.visaDocDubai1', 'modal.visaDocDubai2', 'modal.visaDocDubai3', 'modal.visaDocDubai4'];
+    visaFee.value = 'modal.visaFeeDubai';
+    visaProcessing.value = 'modal.visaTimeDubai';
     visaEligibility.value = 99;
   } else if (newVal === 'Bali') {
-    visaRequiredDocs.value = ['Passport valid 6 months', 'Proof of return flight', 'Visa on Arrival fee payment receipt'];
-    visaFee.value = '$35 (Pay on Arrival)';
-    visaProcessing.value = 'Instant on Arrival';
+    visaRequiredDocs.value = ['modal.visaDocBali1', 'modal.visaDocBali2', 'modal.visaDocBali3'];
+    visaFee.value = 'modal.visaFeeBali';
+    visaProcessing.value = 'modal.visaTimeBali';
     visaEligibility.value = 100;
   }
 }, { immediate: true });
@@ -462,24 +477,24 @@ onUnmounted(() => {
             </div>
             
             <div class="team-quick-stats">
-              <h4 class="stat-header">Key Achievements</h4>
+              <h4 class="stat-header">{{ t('modal.achievements') }}</h4>
               <div class="team-stat-bar">
                 <div class="stat-label">
-                  <span>Countries Visited</span>
+                  <span>{{ t('modal.countriesVisited') }}</span>
                   <span class="stat-num">{{ props.activeCard.data.countriesVisited || 24 }}</span>
                 </div>
                 <div class="stat-track"><div class="stat-fill" style="width: 85%"></div></div>
               </div>
               <div class="team-stat-bar">
                 <div class="stat-label">
-                  <span>Experience</span>
+                  <span>{{ t('modal.experience') }}</span>
                   <span class="stat-num">{{ props.activeCard.data.experienceYears || '6 Years' }}</span>
                 </div>
                 <div class="stat-track"><div class="stat-fill" style="width: 70%"></div></div>
               </div>
               <div class="team-stat-bar">
                 <div class="stat-label">
-                  <span>Client Satisfaction</span>
+                  <span>{{ t('modal.clientSatisfaction') }}</span>
                   <span class="stat-num">99.8%</span>
                 </div>
                 <div class="stat-track"><div class="stat-fill" style="width: 99%"></div></div>
@@ -490,48 +505,48 @@ onUnmounted(() => {
           <!-- Right Col: Bio & Booking Scheduler -->
           <div class="team-col-right">
             <div class="team-header-info">
-              <span class="badge">Team Expert</span>
+              <span class="badge">{{ t('modal.teamExpert') }}</span>
               <h2 class="team-main-name">{{ props.activeCard.data.name }}</h2>
-              <p class="team-main-role">{{ props.activeCard.data.role }}</p>
+              <p class="team-main-role">{{ t('team.member.' + props.activeCard.data.id + '.role') }}</p>
             </div>
 
             <div class="team-main-bio">
-              <h3>Biography</h3>
+              <h3>{{ t('modal.biography') }}</h3>
               <p>
-                {{ props.activeCard.data.bio || `${props.activeCard.data.name} is a seasoned travel coordinator with over half a decade designing award-winning personalized tours. Passionate about custom itineraries, they believe travel is about discovering the soul of a destination.` }}
+                {{ t('team.member.' + props.activeCard.data.id + '.bio') }}
               </p>
               
               <div class="team-meta-facts">
                 <div class="meta-fact">
-                  <strong>🗣️ Languages:</strong>
+                  <strong>{{ t('modal.languages') }}</strong>
                   <span>{{ props.activeCard.data.languages || 'English, French, Arabic' }}</span>
                 </div>
                 <div class="meta-fact">
-                  <strong>📍 Fav Destination:</strong>
-                  <span>{{ props.activeCard.data.favDest || 'Kyoto, Japan' }}</span>
+                  <strong>{{ t('modal.favDest') }}</strong>
+                  <span>{{ t('team.member.' + props.activeCard.data.id + '.favDest') }}</span>
                 </div>
                 <div class="meta-fact">
-                  <strong>💡 Travel Philosophy:</strong>
-                  <span>"Go where you feel most alive."</span>
+                  <strong>{{ t('modal.philosophy') }}</strong>
+                  <span>"{{ t('modal.philosophyVal') }}"</span>
                 </div>
               </div>
             </div>
 
             <!-- Consultation Booking Scheduler -->
             <div class="booking-scheduler">
-              <h3>Schedule a 1-on-1 Consultation</h3>
-              <p class="scheduler-desc">Pick an available slot below to speak directly with {{ props.activeCard.data.name }} via a video call.</p>
+              <h3>{{ t('modal.scheduleConsult') }}</h3>
+              <p class="scheduler-desc">{{ t('modal.scheduleDesc') }}</p>
               
               <form v-if="!bookSuccess" @submit.prevent="handleBookSubmit" class="scheduler-form">
                 <div class="form-grid">
                   <div class="form-group">
-                    <label>Select Date</label>
+                    <label>{{ t('modal.selectDate') }}</label>
                     <input type="date" v-model="bookDate" required class="form-input" />
                   </div>
                   <div class="form-group">
-                    <label>Preferred Time</label>
+                    <label>{{ t('modal.prefTime') }}</label>
                     <select v-model="bookTime" required class="form-input">
-                      <option value="">Choose slot</option>
+                      <option value="">{{ t('modal.chooseSlot') }}</option>
                       <option value="09:00 AM">09:00 AM</option>
                       <option value="11:30 AM">11:30 AM</option>
                       <option value="02:00 PM">02:00 PM</option>
@@ -540,15 +555,15 @@ onUnmounted(() => {
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Your Name</label>
+                  <label>{{ t('modal.yourName') }}</label>
                   <input type="text" v-model="bookName" placeholder="John Doe" required class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Phone Number</label>
+                  <label>{{ t('modal.phone') }}</label>
                   <input type="tel" v-model="bookPhone" placeholder="+213 555 123 456" required class="form-input" />
                 </div>
                 <button type="submit" class="submit-booking-btn">
-                  Confirm Video Meeting
+                  {{ t('modal.confirmMeeting') }}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="inline ml-1"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
                 </button>
               </form>
@@ -556,9 +571,9 @@ onUnmounted(() => {
               <!-- Booking success alert -->
               <div v-else class="booking-success-card animate-scale-up">
                 <div class="success-icon">✓</div>
-                <h4>Consultation Confirmed!</h4>
-                <p>A video invitation with <strong>{{ props.activeCard.data.name }}</strong> has been sent to your email for <strong>{{ bookDate }} at {{ bookTime }}</strong>.</p>
-                <button @click="bookSuccess = false" class="reset-booking-btn">Book Another</button>
+                <h4>{{ t('modal.consultConfirmed') }}</h4>
+                <p>{{ t('modal.consultSuccessDesc') }}</p>
+                <button @click="bookSuccess = false" class="reset-booking-btn">{{ t('modal.bookAnother') }}</button>
               </div>
             </div>
           </div>
@@ -571,8 +586,8 @@ onUnmounted(() => {
             <div class="program-hero-overlay"></div>
             <div class="program-hero-text">
               <span class="program-emoji-badge">{{ props.activeCard.data.icon }}</span>
-              <h2 class="program-main-title">{{ props.activeCard.data.title }}</h2>
-              <p class="program-tagline">Award-Winning Bespoke Experiences</p>
+              <h2 class="program-main-title">{{ props.activeCard.data.id === 1 ? t('programs.adventure') : props.activeCard.data.id === 2 ? t('programs.cultural') : props.activeCard.data.id === 3 ? t('programs.relax') : t('programs.custom') }}</h2>
+              <p class="program-tagline">{{ t('modal.awardBespoke') }}</p>
             </div>
           </div>
 
@@ -583,38 +598,38 @@ onUnmounted(() => {
             <div v-if="props.activeCard.data.id === 1" class="adventure-program-detail">
               <div class="info-split-grid">
                 <div>
-                  <h3>5-Day Alpine Odyssey</h3>
-                  <p class="program-long-desc">Experience raw elevation, glacial treks, and custom mountain guides on our flagship alpine adventure. Built with safety and adrenaline perfectly balanced.</p>
+                  <h3>{{ t('modal.alpineTitle') }}</h3>
+                  <p class="program-long-desc">{{ t('modal.alpineDesc') }}</p>
                   
                   <div class="difficulty-meters mt-4">
-                    <div class="diff-chip"><strong>Difficulty:</strong> <span class="text-orange-500 font-semibold">Challenging</span></div>
-                    <div class="diff-chip"><strong>Duration:</strong> <span>5 Days / 4 Nights</span></div>
-                    <div class="diff-chip"><strong>Group Size:</strong> <span>Max 8 people</span></div>
+                    <div class="diff-chip"><strong>{{ t('modal.difficulty') }}</strong> <span class="text-orange-500 font-semibold">{{ t('modal.challenging') }}</span></div>
+                    <div class="diff-chip"><strong>{{ t('modal.duration') }}</strong> <span>{{ t('modal.alpineDuration') }}</span></div>
+                    <div class="diff-chip"><strong>{{ t('modal.groupSize') }}</strong> <span>{{ t('modal.alpineGroupSize') }}</span></div>
                   </div>
 
                   <!-- Animated Itinerary Timeline -->
                   <div class="itinerary-timeline mt-8">
-                    <h4 class="sub-section-title">The Master Itinerary</h4>
+                    <h4 class="sub-section-title">{{ t('modal.masterItinerary') }}</h4>
                     <div class="itinerary-steps">
                       <div class="itinerary-step">
                         <div class="step-num">01</div>
                         <div class="step-desc">
-                          <h5>Arrival & Base Camp Setup</h5>
-                          <p>Briefing, safety equipment check, and dinner under the stars at Base Camp.</p>
+                          <h5>{{ t('modal.day1Title') }}</h5>
+                          <p>{{ t('modal.day1Desc') }}</p>
                         </div>
                       </div>
                       <div class="itinerary-step">
                         <div class="step-num">02</div>
                         <div class="step-desc">
-                          <h5>Glacier Crossing & Ice Climbing</h5>
-                          <p>Morning ice climbing workshop followed by a scenic ridge-line traverse.</p>
+                          <h5>{{ t('modal.day2Title') }}</h5>
+                          <p>{{ t('modal.day2Desc') }}</p>
                         </div>
                       </div>
                       <div class="itinerary-step">
                         <div class="step-num">03</div>
                         <div class="step-desc">
-                          <h5>Summit Assault</h5>
-                          <p>Early morning push to Mount Shaba peak (3,800m) for breathtaking panoramic vistas.</p>
+                          <h5>{{ t('modal.day3Title') }}</h5>
+                          <p>{{ t('modal.day3Desc') }}</p>
                         </div>
                       </div>
                     </div>
@@ -624,18 +639,18 @@ onUnmounted(() => {
                 <div class="side-booking-pane">
                   <div class="booking-pane-card">
                     <div class="price-header">
-                      <span class="price-from">From</span>
+                      <span class="price-from">{{ t('modal.from') }}</span>
                       <span class="price-val">$1,299</span>
-                      <span class="price-unit">/ person</span>
+                      <span class="price-unit">{{ t('modal.perPerson') }}</span>
                     </div>
                     <ul class="included-list">
-                      <li>✓ Professional Mountain Guides</li>
-                      <li>✓ Technical Climbing Equipment</li>
-                      <li>✓ All meals & basecamp tents</li>
-                      <li>✓ Airport 4x4 pickups</li>
+                      <li>✓ {{ t('modal.incGuides') }}</li>
+                      <li>✓ {{ t('modal.incEquip') }}</li>
+                      <li>✓ {{ t('modal.incMeals') }}</li>
+                      <li>✓ {{ t('modal.incPickups') }}</li>
                     </ul>
-                    <button class="cta-book-now" @click="bookSuccess = true">Reserve Spot</button>
-                    <p class="free-cancel-tag">Free cancellations up to 14 days prior</p>
+                    <button class="cta-book-now" @click="bookSuccess = true">{{ t('modal.reserveSpot') }}</button>
+                    <p class="free-cancel-tag">{{ t('modal.freeCancel') }}</p>
                   </div>
                 </div>
               </div>
@@ -645,30 +660,30 @@ onUnmounted(() => {
             <div v-if="props.activeCard.data.id === 2" class="cultural-program-detail">
               <div class="info-split-grid">
                 <div>
-                  <h3>Immersive Living History Tours</h3>
-                  <p class="program-long-desc">Step back in time. Discover local customs, ancestral ceremonies, culinary traditions, and hidden architecture led by community historians.</p>
+                  <h3>{{ t('modal.culturalTitle') }}</h3>
+                  <p class="program-long-desc">{{ t('modal.culturalDesc') }}</p>
                   
                   <!-- Virtual Video Placeholder -->
                   <div class="virtual-video-container mt-6">
                     <img src="https://images.unsplash.com/photo-1545232979-8bf34eb9757b?auto=format&fit=crop&w=800&q=80" alt="Cultural guide" />
                     <div class="video-play-btn">
                       <span class="play-icon">▶</span>
-                      <span class="play-text">Watch Experience Teaser</span>
+                      <span class="play-text">{{ t('modal.watchTeaser') }}</span>
                     </div>
                   </div>
 
                   <div class="culture-highlights mt-8">
-                    <h4 class="sub-section-title">What Makes It Unmatched</h4>
+                    <h4 class="sub-section-title">{{ t('modal.whatMakesItUnmatched') }}</h4>
                     <div class="bento-sub-grid">
                       <div class="highlight-bento-card">
                         <span class="card-icon">🍲</span>
-                        <h5>Authentic Gastronomy</h5>
-                        <p>Private masterclasses with local culinary keepers using heirloom ingredients.</p>
+                        <h5>{{ t('modal.authenticGastronomy') }}</h5>
+                        <p>{{ t('modal.authenticGastronomyDesc') }}</p>
                       </div>
                       <div class="highlight-bento-card">
                         <span class="card-icon">🏮</span>
-                        <h5>Ceremonies</h5>
-                        <p>Access forbidden temples and sacred ancient ceremonies strictly off the tourist radar.</p>
+                        <h5>{{ t('modal.ceremonies') }}</h5>
+                        <p>{{ t('modal.ceremoniesDesc') }}</p>
                       </div>
                     </div>
                   </div>
@@ -677,17 +692,17 @@ onUnmounted(() => {
                 <div class="side-booking-pane">
                   <div class="booking-pane-card">
                     <div class="price-header">
-                      <span class="price-from">From</span>
+                      <span class="price-from">{{ t('modal.from') }}</span>
                       <span class="price-val">$840</span>
-                      <span class="price-unit">/ person</span>
+                      <span class="price-unit">{{ t('modal.perPerson') }}</span>
                     </div>
                     <ul class="included-list">
-                      <li>✓ Private local guides</li>
-                      <li>✓ All heritage site entry tickets</li>
-                      <li>✓ Gastronomic dining experiences</li>
-                      <li>✓ Five-star boutique lodging</li>
+                      <li>✓ {{ t('modal.incPrivateGuides') }}</li>
+                      <li>✓ {{ t('modal.incTickets') }}</li>
+                      <li>✓ {{ t('modal.incGastronomic') }}</li>
+                      <li>✓ {{ t('modal.incLodging') }}</li>
                     </ul>
-                    <button class="cta-book-now text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">Join Tour Group</button>
+                    <button class="cta-book-now text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.joinTour') }}</button>
                   </div>
                 </div>
               </div>
@@ -697,18 +712,18 @@ onUnmounted(() => {
             <div v-if="props.activeCard.data.id === 3" class="beach-program-detail">
               <div class="info-split-grid">
                 <div>
-                  <h3>Secluded Bays & Sunset Overwater Bungalows</h3>
-                  <p class="program-long-desc">Your sanctuary awaits. Experience private island luxury, yacht day-trips, scuba diving on pristine reefs, and personalized massage therapy by the ocean.</p>
+                  <h3>{{ t('modal.beachTitle') }}</h3>
+                  <p class="program-long-desc">{{ t('modal.beachDesc') }}</p>
                   
                   <div class="beach-amenities-grid mt-6">
-                    <div class="amenity-pill">🏊‍♂️ Infinity Pools</div>
-                    <div class="amenity-pill">⛵ Private Yacht Charters</div>
-                    <div class="amenity-pill">🧘 Oceanfront Yoga</div>
-                    <div class="amenity-pill">🦞 Sunset Beach Dining</div>
+                    <div class="amenity-pill">{{ t('modal.poolAmenity') }}</div>
+                    <div class="amenity-pill">{{ t('modal.yachtAmenity') }}</div>
+                    <div class="amenity-pill">{{ t('modal.yogaAmenity') }}</div>
+                    <div class="amenity-pill">{{ t('modal.diningAmenity') }}</div>
                   </div>
 
                   <div class="photo-masonry mt-8">
-                    <h4 class="sub-section-title">Exclusive Resorts Catalog</h4>
+                    <h4 class="sub-section-title">{{ t('modal.resortsCatalog') }}</h4>
                     <div class="masonry-grid-custom">
                       <img src="https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=400&q=80" alt="Resort 1" class="masonry-img" />
                       <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80" alt="Resort 2" class="masonry-img" />
@@ -719,17 +734,17 @@ onUnmounted(() => {
                 <div class="side-booking-pane">
                   <div class="booking-pane-card">
                     <div class="price-header">
-                      <span class="price-from">From</span>
+                      <span class="price-from">{{ t('modal.from') }}</span>
                       <span class="price-val">$1,899</span>
-                      <span class="price-unit">/ person</span>
+                      <span class="price-unit">{{ t('modal.perPerson') }}</span>
                     </div>
                     <ul class="included-list">
-                      <li>✓ Overwater Bungalow Suite</li>
-                      <li>✓ All-Inclusive Fine Dining</li>
-                      <li>✓ Scuba Certification Sessions</li>
-                      <li>✓ 24/7 Butler Service</li>
+                      <li>✓ {{ t('modal.incSuite') }}</li>
+                      <li>✓ {{ t('modal.incAllInc') }}</li>
+                      <li>✓ {{ t('modal.incScuba') }}</li>
+                      <li>✓ {{ t('modal.incButler') }}</li>
                     </ul>
-                    <button class="cta-book-now" @click="bookSuccess = true">Book Retreat</button>
+                    <button class="cta-book-now" @click="bookSuccess = true">{{ t('modal.bookRetreat') }}</button>
                   </div>
                 </div>
               </div>
@@ -737,14 +752,14 @@ onUnmounted(() => {
 
             <!-- Interactive Custom Program Configurator -->
             <div v-if="props.activeCard.data.id === 4" class="custom-program-detail">
-              <h3 class="text-center mb-6 font-serif text-3xl">Interactive Custom Travel Configurator</h3>
-              <p class="text-center text-gray-600 max-w-xl mx-auto mb-8">Design your dream vacation in real-time. Slide, choose, and watch your custom itinerary budget dynamically calculate with our custom algorithm.</p>
+              <h3 class="text-center mb-6 font-serif text-3xl">{{ t('modal.configuratorTitle') }}</h3>
+              <p class="text-center text-gray-600 max-w-xl mx-auto mb-8">{{ t('modal.configuratorDesc') }}</p>
               
               <div class="configurator-wrapper">
                 <div class="configurator-controls">
                   <!-- Destination Select -->
                   <div class="control-group">
-                    <label>Choose Destination</label>
+                    <label>{{ t('modal.chooseDestination') }}</label>
                     <div class="dest-selector-chips">
                       <button v-for="d in ['Japan', 'Greece', 'Dubai', 'Bali']" :key="d" :class="{ active: customDest === d }" @click="customDest = d" class="chip-btn">
                         {{ d }}
@@ -754,19 +769,19 @@ onUnmounted(() => {
 
                   <!-- Budget Tier Select -->
                   <div class="control-group">
-                    <label>Luxury Tier</label>
+                    <label>{{ t('modal.luxuryTier') }}</label>
                     <div class="tier-selector-chips">
-                      <button :class="{ active: budgetTier === 'budget' }" @click="budgetTier = 'budget'" class="chip-btn">🎒 Backpacker ($)</button>
-                      <button :class="{ active: budgetTier === 'standard' }" @click="budgetTier = 'standard'" class="chip-btn">🏨 Explorer ($$)</button>
-                      <button :class="{ active: budgetTier === 'luxury' }" @click="budgetTier = 'luxury'" class="chip-btn">💎 Elite VIP ($$$)</button>
+                      <button :class="{ active: budgetTier === 'budget' }" @click="budgetTier = 'budget'" class="chip-btn">{{ t('modal.backpacker') }}</button>
+                      <button :class="{ active: budgetTier === 'standard' }" @click="budgetTier = 'standard'" class="chip-btn">{{ t('modal.explorer') }}</button>
+                      <button :class="{ active: budgetTier === 'luxury' }" @click="budgetTier = 'luxury'" class="chip-btn">{{ t('modal.eliteVip') }}</button>
                     </div>
                   </div>
 
                   <!-- Range Slider for Days -->
                   <div class="control-group">
                     <label class="flex justify-between">
-                      <span>Duration (Days)</span>
-                      <strong class="text-orange-500">{{ durationDays }} Days</strong>
+                      <span>{{ t('modal.durationDays') }}</span>
+                      <strong class="text-orange-500">{{ durationDays }} {{ t('modal.durationDays').includes('أيام') ? 'أيام' : t('modal.durationDays').includes('jours') ? 'jours' : 'Days' }}</strong>
                     </label>
                     <input type="range" min="1" max="21" v-model.number="durationDays" class="custom-range-slider" />
                   </div>
@@ -774,18 +789,18 @@ onUnmounted(() => {
                   <!-- Range Slider for Travelers -->
                   <div class="control-group">
                     <label class="flex justify-between">
-                      <span>Number of People</span>
-                      <strong class="text-orange-500">{{ customPeople }} Travelers</strong>
+                      <span>{{ t('modal.numPeople') }}</span>
+                      <strong class="text-orange-500">{{ customPeople }} {{ t('modal.travelers') }}</strong>
                     </label>
                     <input type="range" min="1" max="10" v-model.number="customPeople" class="custom-range-slider" />
                   </div>
 
                   <!-- Activities Checklist -->
                   <div class="control-group">
-                    <label>Activities Included</label>
+                    <label>{{ t('modal.activitiesIncluded') }}</label>
                     <div class="activities-checkbox-grid">
                       <button v-for="act in activityOptions" :key="act" :class="{ active: customActivities.includes(act) }" @click="customActivities.includes(act) ? customActivities = customActivities.filter(a => a !== act) : customActivities.push(act)" class="activity-checkbox-btn">
-                        {{ act }}
+                        {{ act === 'Hiking' ? t('modal.actHiking') : act === 'Cultural Tours' ? t('modal.actCultural') : act === 'Water Sports' ? t('modal.actWater') : act === 'Shopping' ? t('modal.actShopping') : act === 'Food Tasting' ? t('modal.actFood') : t('modal.actRelax') }}
                       </button>
                     </div>
                   </div>
@@ -794,29 +809,29 @@ onUnmounted(() => {
                 <!-- Price Estimator Panel -->
                 <div class="configurator-preview-card">
                   <div class="preview-header">
-                    <h4>Tripora Customized Itinerary</h4>
-                    <span class="custom-stamp">BESPOKE</span>
+                    <h4>{{ t('modal.customItinerary') }}</h4>
+                    <span class="custom-stamp">{{ t('modal.bespokeBadge') }}</span>
                   </div>
                   
                   <div class="preview-specs-list">
                     <div class="spec-item">
-                      <span>Destination:</span>
+                      <span>{{ t('modal.destLabel') }}</span>
                       <strong>{{ customDest }}</strong>
                     </div>
                     <div class="spec-item">
-                      <span>Trip Tier:</span>
-                      <strong class="capitalize">{{ budgetTier }} Level</strong>
+                      <span>{{ t('modal.tripTierLabel') }}</span>
+                      <strong class="capitalize">{{ budgetTier === 'budget' ? t('modal.backpacker').replace('🎒 ', '') : budgetTier === 'standard' ? t('modal.explorer').replace('🏨 ', '') : t('modal.eliteVip').replace('💎 ', '') }}</strong>
                     </div>
                     <div class="spec-item">
-                      <span>Duration:</span>
-                      <strong>{{ durationDays }} Days / {{ durationDays - 1 }} Nights</strong>
+                      <span>{{ t('modal.durationLabel') }}</span>
+                      <strong>{{ durationDays }} {{ t('modal.durationDays').includes('أيام') ? 'أيام' : t('modal.durationDays').includes('jours') ? 'jours' : 'Days' }} / {{ durationDays - 1 }} {{ t('modal.durationDays').includes('أيام') ? 'ليالٍ' : t('modal.durationDays').includes('jours') ? 'nuits' : 'Nights' }}</strong>
                     </div>
                     <div class="spec-item">
-                      <span>Party Size:</span>
-                      <strong>{{ customPeople }} Adults</strong>
+                      <span>{{ t('modal.partySizeLabel') }}</span>
+                      <strong>{{ customPeople }} {{ t('modal.travelers') }}</strong>
                     </div>
                     <div class="spec-item">
-                      <span>Activities Count:</span>
+                      <span>{{ t('modal.activitiesCountLabel') }}</span>
                       <strong>{{ customActivities.length }}</strong>
                     </div>
                   </div>
@@ -824,13 +839,13 @@ onUnmounted(() => {
                   <hr class="my-4 border-gray-200" />
 
                   <div class="live-price-box">
-                    <span class="live-label">Estimated Custom Package Price</span>
+                    <span class="live-label">{{ t('modal.estPackagePrice') }}</span>
                     <span class="live-val">${{ calculateLivePrice() }}</span>
-                    <span class="live-terms">All-inclusive flight, boarding & transit estimates</span>
+                    <span class="live-terms">{{ t('modal.allIncEstimates') }}</span>
                   </div>
 
-                  <button class="custom-booking-cta" @click="bookSuccess = true">Lock-In Custom Rate</button>
-                  <span class="assist-badge">⚡ Instant confirmation within 12 hours</span>
+                  <button class="custom-booking-cta" @click="bookSuccess = true">{{ t('modal.lockInRate') }}</button>
+                  <span class="assist-badge">{{ t('modal.instantConfirmation') }}</span>
                 </div>
               </div>
             </div>
@@ -853,7 +868,7 @@ onUnmounted(() => {
               
               <!-- Food & Culture Spotlight -->
               <div class="dest-cultural-spotlight">
-                <h4>Local Delicacies & Culture</h4>
+                <h4>{{ t('modal.localDelicacyTitle') }}</h4>
                 <div class="spotlight-cards">
                   <div class="spotlight-food-card">
                     <img v-if="props.activeCard.data.name === 'Japan'" src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=150&q=80" alt="Sushi" />
@@ -861,8 +876,8 @@ onUnmounted(() => {
                     <img v-else-if="props.activeCard.data.name === 'Dubai'" src="https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=150&q=80" alt="Dates" />
                     <img v-else src="https://images.unsplash.com/photo-1532634922-8fe0b757fb13?auto=format&fit=crop&w=150&q=80" alt="Curry" />
                     <div>
-                      <h5>{{ props.activeCard.data.name === 'Japan' ? 'Traditional Sushi & Ramen' : props.activeCard.data.name === 'Greece' ? 'Bespoke Olive & Feta Salad' : props.activeCard.data.name === 'Dubai' ? 'Spiced Rice & Arabic Coffee' : 'Fresh Tropical Balinese Spices' }}</h5>
-                      <p>Experience local dining in Michelin stars or hidden mountain kitchens curated by Tripora.</p>
+                      <h5>{{ props.activeCard.data.name === 'Japan' ? t('modal.delicacyJapan') : props.activeCard.data.name === 'Greece' ? t('modal.delicacyGreece') : props.activeCard.data.name === 'Dubai' ? t('modal.delicacyDubai') : t('modal.delicacyBali') }}</h5>
+                      <p>{{ t('modal.delicacyDesc') }}</p>
                     </div>
                   </div>
                 </div>
@@ -875,42 +890,42 @@ onUnmounted(() => {
               <div class="dest-widgets-grid">
                 <!-- Weather widget -->
                 <div class="dest-widget-box weather-widget">
-                  <div class="widget-header">☀️ Live Weather Simulator</div>
+                  <div class="widget-header">{{ t('modal.weatherSim') }}</div>
                   <div class="weather-temp-wrap">
                     <span class="temp">{{ props.activeCard.data.name === 'Japan' ? '21°C' : props.activeCard.data.name === 'Greece' ? '28°C' : props.activeCard.data.name === 'Dubai' ? '36°C' : '29°C' }}</span>
                     <span class="icon">{{ props.activeCard.data.name === 'Japan' ? '🌸' : props.activeCard.data.name === 'Greece' ? '🏖️' : props.activeCard.data.name === 'Dubai' ? '🐪' : '🌴' }}</span>
                   </div>
-                  <p class="weather-comment">{{ props.activeCard.data.name === 'Japan' ? 'Spring breeze. Beautiful cherry blossoms falling.' : props.activeCard.data.name === 'Greece' ? 'Perfect blue skies. Excellent water temperature.' : props.activeCard.data.name === 'Dubai' ? 'Golden sunny days. Poolside luxury conditions.' : 'Gentle tropical rains expected in late evenings.' }}</p>
+                  <p class="weather-comment">{{ props.activeCard.data.name === 'Japan' ? t('modal.weatherJapan') : props.activeCard.data.name === 'Greece' ? t('modal.weatherGreece') : props.activeCard.data.name === 'Dubai' ? t('modal.weatherDubai') : t('modal.weatherBali') }}</p>
                 </div>
 
                 <!-- Best season widget -->
                 <div class="dest-widget-box season-widget">
-                  <div class="widget-header">📅 Best Season to Visit</div>
-                  <div class="season-badge">{{ props.activeCard.data.name === 'Japan' ? 'April - June' : props.activeCard.data.name === 'Greece' ? 'May - September' : props.activeCard.data.name === 'Dubai' ? 'October - April' : 'May - October' }}</div>
-                  <p class="season-details">High density of local flower bloomings and outdoor seasonal festivals.</p>
+                  <div class="widget-header">{{ t('modal.bestSeason') }}</div>
+                  <div class="season-badge">{{ props.activeCard.data.name === 'Japan' ? t('modal.seasonJapan') : props.activeCard.data.name === 'Greece' ? t('modal.seasonGreece') : props.activeCard.data.name === 'Dubai' ? t('modal.seasonDubai') : t('modal.seasonBali') }}</div>
+                  <p class="season-details">{{ t('modal.seasonDetails') }}</p>
                 </div>
               </div>
 
               <!-- General Tour Estimates -->
               <div class="dest-about-section">
-                <h3>About {{ props.activeCard.data.name }}</h3>
+                <h3>{{ t('modal.about') }} {{ props.activeCard.data.name }}</h3>
                 <p>
-                  {{ props.activeCard.data.name === 'Japan' ? 'A mystical convergence of neon skyscraper cities and silent mountain temples. Japan offers the world’s most refined culinary arts, high-speed travel bullet trains, and absolute safety.' : props.activeCard.data.name === 'Greece' ? 'The cradle of western civilization. Draped in stunning white-washed seaside cliffs of Santorini and cobalt-blue ocean shorelines, Greece is a dreamscape for historians and beach-lovers.' : props.activeCard.data.name === 'Dubai' ? 'A golden futuristic skyline rising from desert dunes. Dubai redefines luxury with over-the-top water slides, indoor ski parks, gold-dust coffee, and private yachts.' : 'The spiritual sanctuary. Bali features dense jungle volcanic peaks, historical emerald rice terraced fields, and beautiful coral beach reefs ideal for scuba diving.' }}
+                  {{ props.activeCard.data.name === 'Japan' ? t('modal.aboutJapan') : props.activeCard.data.name === 'Greece' ? t('modal.aboutGreece') : props.activeCard.data.name === 'Dubai' ? t('modal.aboutDubai') : t('modal.aboutBali') }}
                 </p>
                 
-                <h4 class="mt-8 mb-3">Popular Scheduled Tours</h4>
+                <h4 class="mt-8 mb-3">{{ t('modal.popTours') }}</h4>
                 <div class="popular-tours-list">
                   <div class="tour-item">
                     <div class="tour-name">
-                      <h5>Classic Highlights Package</h5>
-                      <span>7 Days / 6 Nights</span>
+                      <h5>{{ t('modal.tour1') }}</h5>
+                      <span>7 {{ t('modal.durationDays').includes('أيام') ? 'أيام' : t('modal.durationDays').includes('jours') ? 'jours' : 'Days' }} / 6 {{ t('modal.durationDays').includes('أيام') ? 'ليالٍ' : t('modal.durationDays').includes('jours') ? 'nuits' : 'Nights' }}</span>
                     </div>
                     <span class="tour-price">$1,450</span>
                   </div>
                   <div class="tour-item">
                     <div class="tour-name">
-                      <h5>Deep Immersive Cultural Explorer</h5>
-                      <span>12 Days / 11 Nights</span>
+                      <h5>{{ t('modal.tour2') }}</h5>
+                      <span>12 {{ t('modal.durationDays').includes('أيام') ? 'أيام' : t('modal.durationDays').includes('jours') ? 'jours' : 'Days' }} / 11 {{ t('modal.durationDays').includes('أيام') ? 'ليالٍ' : t('modal.durationDays').includes('jours') ? 'nuits' : 'Nights' }}</span>
                     </div>
                     <span class="tour-price">$2,200</span>
                   </div>
@@ -918,10 +933,10 @@ onUnmounted(() => {
 
                 <div class="booking-instant-box mt-8">
                   <div class="booking-info-label">
-                    <span>Package Price starting from</span>
+                    <span>{{ t('modal.priceStart') }}</span>
                     <strong>${{ props.activeCard.data.name === 'Japan' ? '1,100' : props.activeCard.data.name === 'Greece' ? '980' : props.activeCard.data.name === 'Dubai' ? '1,550' : '780' }}</strong>
                   </div>
-                  <button class="book-destination-cta" @click="bookSuccess = true">Select Travel Dates</button>
+                  <button class="book-destination-cta text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.selectDates') }}</button>
                 </div>
               </div>
             </div>
@@ -933,41 +948,41 @@ onUnmounted(() => {
           <!-- Title & Emoji badge -->
           <div class="service-detail-header text-center py-6">
             <div class="service-emoji-badge">{{ props.activeCard.data.icon }}</div>
-            <h2 class="service-detail-title">{{ props.activeCard.data.title }}</h2>
-            <p class="text-gray-500 max-w-md mx-auto">Seamless, automated travel services optimized for global travelers.</p>
+            <h2 class="service-detail-title">{{ t('services.' + props.activeCard.data.key + '.title') }}</h2>
+            <p class="text-gray-500 max-w-md mx-auto">{{ t('modal.serviceTagline') }}</p>
           </div>
 
           <!-- FLIGHT BOOKING SERVICE -->
           <div v-if="props.activeCard.data.id === 1" class="flight-service-interactive px-4 py-6">
-            <h3 class="font-serif text-2xl text-center mb-6">Interactive Smart Flight Search</h3>
+            <h3 class="font-serif text-2xl text-center mb-6">{{ t('modal.flightTitle') }}</h3>
             <div class="flight-widget-form">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-group">
-                  <label>Origin Airport</label>
+                  <label>{{ t('modal.originAirport') }}</label>
                   <input type="text" v-model="flightFrom" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Destination Airport</label>
+                  <label>{{ t('modal.destinationAirport') }}</label>
                   <input type="text" v-model="flightTo" class="form-input" />
                 </div>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <div class="form-group">
-                  <label>Seat Class</label>
+                  <label>{{ t('modal.seatClass') }}</label>
                   <select v-model="flightClass" class="form-input">
-                    <option value="economy">Economy Class ($)</option>
-                    <option value="business">Business Class ($$)</option>
-                    <option value="first">First Premium (💎)</option>
+                    <option value="economy">{{ t('modal.economyClass') }}</option>
+                    <option value="business">{{ t('modal.businessClass') }}</option>
+                    <option value="first">{{ t('modal.firstPremium') }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Departure Date</label>
+                  <label>{{ t('modal.departureDate') }}</label>
                   <input type="date" value="2026-08-15" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Airline Preference</label>
+                  <label>{{ t('modal.airlinePref') }}</label>
                   <select class="form-input">
-                    <option>Any Alliance (Recommended)</option>
+                    <option>{{ t('modal.anyAlliance') }}</option>
                     <option>Emirates</option>
                     <option>Qatar Airways</option>
                     <option>Air France</option>
@@ -977,92 +992,92 @@ onUnmounted(() => {
               
               <!-- Simulated price trend chart -->
               <div class="price-trend-graph-wrap mt-8">
-                <h4 class="text-sm font-semibold mb-2">📊 7-Day Fare Trend Estimate (Awwwards-Level Engine)</h4>
+                <h4 class="text-sm font-semibold mb-2">📊 {{ t('modal.fareTrend') }}</h4>
                 <div class="price-trend-graph">
                   <div class="graph-bar" style="height: 45%;">
                     <span class="bar-price">$810</span>
-                    <span class="bar-day">Mon</span>
+                    <span class="bar-day">{{ t('modal.mon') }}</span>
                   </div>
                   <div class="graph-bar" style="height: 60%;">
                     <span class="bar-price">$840</span>
-                    <span class="bar-day">Tue</span>
+                    <span class="bar-day">{{ t('modal.tue') }}</span>
                   </div>
                   <div class="graph-bar active" style="height: 35%;">
                     <span class="bar-price" style="background-color: var(--color-primary); color: #000;">$780</span>
-                    <span class="bar-day">Wed</span>
+                    <span class="bar-day">{{ t('modal.wed') }}</span>
                   </div>
                   <div class="graph-bar" style="height: 75%;">
                     <span class="bar-price">$890</span>
-                    <span class="bar-day">Thu</span>
+                    <span class="bar-day">{{ t('modal.thu') }}</span>
                   </div>
                   <div class="graph-bar" style="height: 80%;">
                     <span class="bar-price">$910</span>
-                    <span class="bar-day">Fri</span>
+                    <span class="bar-day">{{ t('modal.fri') }}</span>
                   </div>
                 </div>
               </div>
 
               <div class="flight-actions mt-8 flex justify-between items-center">
                 <div class="flight-quote-sum">
-                  <span>Best Price Found:</span>
+                  <span>{{ t('modal.bestPriceFound') }}</span>
                   <strong>${{ flightClass === 'economy' ? 780 : flightClass === 'business' ? 1850 : 3800 }}</strong>
                 </div>
-                <button class="search-flights-cta" @click="bookSuccess = true">Reserve Flight Tickets</button>
+                <button class="search-flights-cta text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.reserveFlights') }}</button>
               </div>
             </div>
           </div>
 
           <!-- HOTEL RESERVATION SERVICE -->
           <div v-if="props.activeCard.data.id === 2" class="hotel-service-interactive px-4 py-6">
-            <h3 class="font-serif text-2xl text-center mb-6">Bespoke Hotel & Suite Booker</h3>
+            <h3 class="font-serif text-2xl text-center mb-6">{{ t('modal.hotelTitle') }}</h3>
             <div class="hotel-booking-shell">
               <div class="form-grid">
                 <div class="form-group">
-                  <label>Check-In Date</label>
+                  <label>{{ t('modal.checkInDate') }}</label>
                   <input type="date" v-model="checkIn" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Check-Out Date</label>
+                  <label>{{ t('modal.checkOutDate') }}</label>
                   <input type="date" v-model="checkOut" class="form-input" />
                 </div>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="form-group">
-                  <label>Room Category</label>
+                  <label>{{ t('modal.roomCategory') }}</label>
                   <select v-model="selectedRoomType" class="form-input">
-                    <option value="standard">Standard Cozy Room ($120/nt)</option>
-                    <option value="deluxe">Deluxe Sea-View Room ($220/nt)</option>
-                    <option value="villa">Presidential Overwater Villa ($650/nt)</option>
+                    <option value="standard">{{ t('modal.hotelStandardOpt') }}</option>
+                    <option value="deluxe">{{ t('modal.hotelDeluxeOpt') }}</option>
+                    <option value="villa">{{ t('modal.hotelVillaOpt') }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Guests</label>
+                  <label>{{ t('modal.guests') }}</label>
                   <input type="number" min="1" max="5" v-model.number="roomsCount" class="form-input" />
                 </div>
               </div>
 
               <div class="amenities-checklist mt-6">
-                <h4>Desired Guest Amenities</h4>
+                <h4>{{ t('modal.desiredAmenities') }}</h4>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 text-sm text-gray-600">
-                  <label><input type="checkbox" checked /> High-Speed Wi-Fi</label>
-                  <label><input type="checkbox" checked /> Infinity Pool Access</label>
-                  <label><input type="checkbox" /> Private Spa Room</label>
-                  <label><input type="checkbox" /> Airport Shuttle Transfer</label>
-                  <label><input type="checkbox" checked /> Complementary Breakfast</label>
+                  <label><input type="checkbox" checked /> {{ t('modal.wifi') }}</label>
+                  <label><input type="checkbox" checked /> {{ t('modal.poolAccess') }}</label>
+                  <label><input type="checkbox" /> {{ t('modal.spaRoom') }}</label>
+                  <label><input type="checkbox" /> {{ t('modal.airportShuttle') }}</label>
+                  <label><input type="checkbox" checked /> {{ t('modal.breakfast') }}</label>
                 </div>
               </div>
 
-              <button class="hotel-submit-cta mt-6" @click="bookSuccess = true">Check Hotel Room Availability</button>
+              <button class="hotel-submit-cta mt-6 text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.checkHotelAvailability') }}</button>
             </div>
           </div>
 
           <!-- VISA ASSISTANCE SERVICE -->
           <div v-if="props.activeCard.data.id === 3" class="visa-service-interactive px-4 py-6">
-            <h3 class="font-serif text-2xl text-center mb-6">Eligibility & Document Checker</h3>
+            <h3 class="font-serif text-2xl text-center mb-6">{{ t('modal.visaTitle') }}</h3>
             <div class="visa-container-box">
               <div class="form-group max-w-sm mx-auto mb-6">
-                <label class="text-center block">Select Your Destination Country</label>
+                <label class="text-center block">{{ t('modal.selectDestCountry') }}</label>
                 <select v-model="visaCountry" class="form-input">
                   <option value="Japan">Japan 🌸</option>
                   <option value="Greece">Greece 🇬🇷</option>
@@ -1073,28 +1088,28 @@ onUnmounted(() => {
 
               <div class="visa-results-panel grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="visa-doc-box">
-                  <h5>📋 Required Document Packet</h5>
+                  <h5>{{ t('modal.reqDocs') }}</h5>
                   <ul class="visa-doc-list">
-                    <li v-for="doc in visaRequiredDocs" :key="doc">✓ {{ doc }}</li>
+                    <li v-for="doc in visaRequiredDocs" :key="doc">✓ {{ t(doc) }}</li>
                   </ul>
                 </div>
                 
                 <div class="visa-metrics-box">
-                  <h5>⚡ Visa Statistics</h5>
+                  <h5>{{ t('modal.visaStats') }}</h5>
                   <div class="metric-item">
-                    <span>Government Fee:</span>
-                    <strong>{{ visaFee }}</strong>
+                    <span>{{ t('modal.govFee') }}</span>
+                    <strong>{{ t(visaFee) }}</strong>
                   </div>
                   <div class="metric-item">
-                    <span>Processing Timeline:</span>
-                    <strong>{{ visaProcessing }}</strong>
+                    <span>{{ t('modal.processingTime') }}</span>
+                    <strong>{{ t(visaProcessing) }}</strong>
                   </div>
                   <div class="metric-item">
-                    <span>Approval Likelihood:</span>
-                    <strong class="text-green-600">{{ visaEligibility }}% approval rate</strong>
+                    <span>{{ t('modal.approvalLikelihood') }}</span>
+                    <strong class="text-green-600">{{ visaEligibility }}% {{ t('modal.approvalRate') }}</strong>
                   </div>
                   
-                  <button class="visa-apply-btn mt-6" @click="bookSuccess = true">Submit Documents For Review</button>
+                  <button class="visa-apply-btn mt-6 text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.submitDocs') }}</button>
                 </div>
               </div>
             </div>
@@ -1102,46 +1117,46 @@ onUnmounted(() => {
 
           <!-- TRAVEL INSURANCE SERVICE -->
           <div v-if="props.activeCard.data.id === 4" class="insurance-service-interactive px-4 py-6">
-            <h3 class="font-serif text-2xl text-center mb-6">Premium Travel Cover Quote Generator</h3>
+            <h3 class="font-serif text-2xl text-center mb-6">{{ t('modal.insTitle') }}</h3>
             <div class="ins-calc-shell grid grid-cols-1 md:grid-cols-2 gap-8">
               <div class="ins-inputs">
                 <div class="form-group mb-4">
-                  <label>Age of Oldest Traveler</label>
+                  <label>{{ t('modal.ageTraveler') }}</label>
                   <input type="number" v-model.number="insAge" min="1" max="95" class="form-input" />
                 </div>
                 <div class="form-group mb-4">
-                  <label>Trip Duration (Days)</label>
+                  <label>{{ t('modal.tripDuration') }}</label>
                   <input type="number" v-model.number="insDuration" min="1" max="90" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Coverage tier</label>
+                  <label>{{ t('modal.coverageTier') }}</label>
                   <select v-model="insTier" class="form-input">
-                    <option value="basic">Standard medical only ($50k coverage)</option>
-                    <option value="premium">Premium All-Inclusive ($250k medical + luggage + delay)</option>
-                    <option value="vip">Elite VIP ($1M medical + adventure sports + private jets)</option>
+                    <option value="basic">{{ t('modal.insBasicOpt') }}</option>
+                    <option value="premium">{{ t('modal.insPremiumOpt') }}</option>
+                    <option value="vip">{{ t('modal.insVipOpt') }}</option>
                   </select>
                 </div>
               </div>
 
               <div class="ins-quote-card text-center">
-                <h4>Your Premium Cover Quote</h4>
+                <h4>{{ t('modal.premiumCoverQuote') }}</h4>
                 <div class="ins-price-value">${{ insAge > 65 ? (insDuration * 6) + 50 : insTier === 'basic' ? (insDuration * 2) : insTier === 'vip' ? (insDuration * 9) : (insDuration * 4) }}</div>
-                <span class="terms-label">One-off Payment</span>
+                <span class="terms-label">{{ t('modal.oneOffPayment') }}</span>
                 
                 <ul class="quote-benefits-list text-left mt-6">
-                  <li>🏥 100% Direct Billing to hospital partners</li>
-                  <li>🧳 Up to $2,500 cover for lost gear & items</li>
-                  <li>✈️ Flight delay hotel compensation included</li>
+                  <li>{{ t('modal.billingBenefit') }}</li>
+                  <li>{{ t('modal.luggageBenefit') }}</li>
+                  <li>{{ t('modal.delayBenefit') }}</li>
                 </ul>
 
-                <button class="buy-insurance-cta mt-6" @click="bookSuccess = true">Purchase Policy Now</button>
+                <button class="buy-insurance-cta mt-6 text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.purchasePolicy') }}</button>
               </div>
             </div>
           </div>
 
           <!-- TOUR GUIDES SERVICE -->
           <div v-if="props.activeCard.data.id === 5" class="tour-guides-service px-4 py-6">
-            <h3 class="font-serif text-2xl text-center mb-6 font-semibold">Curated Professional Private Guides</h3>
+            <h3 class="font-serif text-2xl text-center mb-6 font-semibold">{{ t('modal.guidesTitle') }}</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Guide 1 -->
               <div class="guide-profile-card">
@@ -1155,7 +1170,7 @@ onUnmounted(() => {
                     <span>⭐ 4.98 Rating</span>
                     <span>🗣️ English, Japanese</span>
                   </div>
-                  <button class="book-guide-mini-btn" @click="bookSuccess = true">Book Guide ($45/hr)</button>
+                  <button class="book-guide-mini-btn text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.bookGuide') }} ($45/hr)</button>
                 </div>
               </div>
 
@@ -1171,7 +1186,7 @@ onUnmounted(() => {
                     <span>⭐ 4.95 Rating</span>
                     <span>🗣️ German, English, French</span>
                   </div>
-                  <button class="book-guide-mini-btn" @click="bookSuccess = true">Book Guide ($50/hr)</button>
+                  <button class="book-guide-mini-btn text-dark" style="background: var(--color-primary);" @click="bookSuccess = true">{{ t('modal.bookGuide') }} ($50/hr)</button>
                 </div>
               </div>
             </div>
@@ -1179,13 +1194,13 @@ onUnmounted(() => {
 
           <!-- 24/7 LIVE SUPPORT CHAT -->
           <div v-if="props.activeCard.data.id === 6" class="support-service-chat px-2 py-4">
-            <h3 class="font-serif text-2xl text-center mb-4">Interactive 24/7 SOS Live Chat</h3>
+            <h3 class="font-serif text-2xl text-center mb-4">{{ t('modal.chatTitle') }}</h3>
             <div class="chat-terminal-shell">
               <!-- Messages stream -->
               <div class="chat-messages-box">
                 <div v-for="(m, idx) in chatMessages" :key="idx" :class="['chat-bubble', m.sender === 'bot' ? 'chat-bot' : 'chat-user']">
-                  <span class="bubble-sender">{{ m.sender === 'bot' ? 'Tripora SOS' : 'You' }}</span>
-                  <p class="bubble-text">{{ m.text }}</p>
+                  <span class="bubble-sender">{{ m.sender === 'bot' ? 'Trevvelo SOS' : (bookName.split(' ')[0] || t('contact.fullName').split(' ')[0]) }}</span>
+                  <p class="bubble-text">{{ m.textKey ? t(m.textKey) : m.text }}</p>
                 </div>
                 
                 <!-- Typing Indicator -->
@@ -1196,18 +1211,18 @@ onUnmounted(() => {
 
               <!-- Suggested Query Chips -->
               <div class="suggested-queries-pane">
-                <span class="pane-label">Need immediate answers? Tap below:</span>
+                <span class="pane-label">{{ t('modal.tapBelow') }}</span>
                 <div class="chips-flex">
-                  <button v-for="q in suggestedChats" :key="q" @click="handleSendMessage(q)" class="suggested-chip">
-                    {{ q }}
+                  <button v-for="q in suggestedChats" :key="q.key" @click="handleSendMessage(q)" class="suggested-chip">
+                    {{ t(q.textKey) }}
                   </button>
                 </div>
               </div>
 
               <!-- Chat footer input -->
               <div class="chat-input-bar">
-                <input type="text" v-model="userMessage" placeholder="Ask anything about insurance, flight delays, emergency line..." @keyup.enter="handleSendMessage()" class="chat-text-input" />
-                <button @click="handleSendMessage()" class="chat-send-btn">Send</button>
+                <input type="text" v-model="userMessage" :placeholder="t('modal.chatPlaceholder')" @keyup.enter="handleSendMessage()" class="chat-text-input" />
+                <button @click="handleSendMessage()" class="chat-send-btn">{{ t('modal.send') }}</button>
               </div>
             </div>
           </div>
@@ -1215,9 +1230,9 @@ onUnmounted(() => {
           <!-- General Alert Overlay -->
           <div v-if="bookSuccess && props.activeCard.data.id !== 6" class="service-booking-success animate-scale-up text-center">
             <div class="success-icon-badge">✓</div>
-            <h4>Request Submitted Successfully!</h4>
-            <p>Our automation systems have locked in your travel settings. A detailed reservation invoice and itinerary packet are being generated for your registered profile.</p>
-            <button class="close-success-btn" @click="bookSuccess = false">Done</button>
+            <h4>{{ t('modal.reqSuccess') }}</h4>
+            <p>{{ t('modal.reqSuccessDesc') }}</p>
+            <button class="close-success-btn text-dark font-semibold" style="background: var(--color-primary);" @click="bookSuccess = false">{{ t('modal.done') }}</button>
           </div>
         </div>
 
@@ -2407,5 +2422,65 @@ onUnmounted(() => {
 @keyframes typing-dots {
   from { transform: translateY(0); }
   to { transform: translateY(-4px); }
+}
+
+/* Dark Mode overrides for Expanded Modal content */
+:global(.dark-mode) .modal-overlay {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+:global(.dark-mode) .modal-container {
+  background: #1A1A1A;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+:global(.dark-mode) .modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(.dark-mode) .chat-bot {
+  background: #252525;
+  color: #E5E0D8;
+}
+
+:global(.dark-mode) .suggested-chip {
+  background: #2A2A2A;
+  color: #B5B0A8;
+}
+
+:global(.dark-mode) .suggested-chip:hover {
+  background: #333333;
+  color: #FFFFFF;
+}
+
+:global(.dark-mode) .chat-text-input {
+  background: #252525;
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark-mode) .service-booking-success {
+  background: rgba(26, 26, 26, 0.98);
+}
+
+:global(.dark-mode) .guide-profile-card {
+  background: #222222;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:global(.dark-mode) .booking-pane-card {
+  background: #222222;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(.dark-mode) .diff-chip {
+  background: #252525;
+  color: #B5B0A8;
+}
+
+:global(.dark-mode) .amenity-pill {
+  background: #252525;
+  color: #B5B0A8;
 }
 </style>

@@ -39,6 +39,21 @@
   --transition-slow: 0.5s ease;
 }
 
+/* ---------- Dark Mode Variables ---------- */
+html.dark-mode {
+  --color-dark: #FFFFFF;
+  --color-dark-soft: #F8F6F3;
+  --color-text: #E5E0D8;
+  --color-text-light: #B5B0A8;
+  --color-text-muted: #858078;
+  --color-white: #1A1A1A;
+  --color-off-white: #121212;
+  --color-cream: #1C140A;
+  --color-bg-card: #222222;
+  --color-bg-dark: #121212;
+  --color-border: #2D2D2D;
+}
+
 /* ---------- Reset ---------- */
 *,
 *::before,
@@ -94,7 +109,8 @@ button {
 /* ---------- Bento Grid Layout ---------- */
 .parent {
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  min-height: 860px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(5, 1fr);
@@ -563,8 +579,8 @@ button {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  height: 90%;
-  min-height: 140px;
+  height: 100%;
+  min-height: 180px;
   background: var(--color-bg-card);
   transition: transform var(--transition-normal);
 }
@@ -574,10 +590,13 @@ button {
 }
 
 .program-card__img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform var(--transition-slow);
+  z-index: 0;
 }
 
 .program-card:hover .program-card__img {
@@ -588,6 +607,7 @@ button {
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.3) 60%, rgba(0, 0, 0, 0) 100%);
+  z-index: 1;
 }
 
 .program-card__content {
@@ -599,6 +619,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  z-index: 2;
 }
 
 .program-card__icon-badge {
@@ -1056,6 +1077,7 @@ button {
   border-radius: 12px;
   overflow: hidden;
   height: 100%;
+  min-height: 180px;
   transition: transform var(--transition-normal);
 }
 
@@ -1064,10 +1086,13 @@ button {
 }
 
 .dest-card__img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform var(--transition-slow);
+  z-index: 0;
 }
 
 .dest-card:hover .dest-card__img {
@@ -1085,6 +1110,7 @@ button {
   align-items: center;
   gap: 4px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  z-index: 2;
 }
 
 .dest-card__pin {
@@ -1208,9 +1234,9 @@ button {
   
 }
 /* ===========================
-   Tablet (1024px)
+   Tablet / Laptop (1200px)
 =========================== */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
 
   .parent{
     padding:12px;
@@ -1218,15 +1244,28 @@ button {
     gap:12px;
 
     grid-template-columns:repeat(2,1fr);
-    grid-auto-rows:minmax(260px,auto);
+    grid-auto-rows:minmax(280px,auto);
 
     height:auto;
+    min-height: auto;
   }
 
   .parent > div{
     margin:0 !important;
     grid-column:auto !important;
     grid-row:auto !important;
+    min-height: 280px;
+  }
+
+  /* Force sections to expand to fit content rather than remaining 100% height and scroll-jacking/clipping */
+  .team,
+  .programs,
+  .top-destinations,
+  .services,
+  .contact {
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
   }
 
   .div2{
@@ -1236,6 +1275,11 @@ button {
 
   .div5{
     grid-column:span 2;
+  }
+
+  .programs__cards,
+  .top-destinations__list {
+    grid-template-columns: repeat(2, 1fr);
   }
 
 }
@@ -1378,6 +1422,17 @@ button {
 
 }
 
+/* ===========================
+   Extra Small Mobile (500px)
+=========================== */
+@media (max-width:500px){
+  .services__grid,
+  .programs__cards,
+  .top-destinations__list {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* ============================================
    Awwwards Premium Creative Keyframes & Utils
    ============================================ */
@@ -1426,3 +1481,94 @@ button {
   background: var(--color-white) !important;
   transform: translateX(4px);
 }
+
+/* ============================================
+   PREMIUM AMBIENT FLOATING & DRAWING ANIMATIONS
+   ============================================ */
+
+@keyframes floatCard1 {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-7px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes floatCard2 {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0px); }
+}
+
+.float-ambient-1 {
+  animation: floatCard1 6s ease-in-out infinite;
+}
+
+.float-ambient-2 {
+  animation: floatCard2 5s ease-in-out infinite;
+}
+
+/* Logo Drawing effects */
+.logo-path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawLogo 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.logo-path-accent {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawLogo 2s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.2s;
+}
+
+@keyframes drawLogo {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* RTL (Right to Left) support utilities */
+html[dir="rtl"] {
+  font-family: sans-serif; /* clean default for Arabic */
+}
+
+html[dir="rtl"] .ml-auto {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+html[dir="rtl"] .service-chevron {
+  transform: scaleX(-1);
+}
+
+html[dir="rtl"] .service-item:hover {
+  transform: translateX(-4px);
+}
+
+html[dir="rtl"] .navbar-brand-group {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .navbar-wrapper {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .top-destinations__header {
+  text-align: right;
+}
+
+html[dir="rtl"] .programs__title {
+  text-align: right;
+}
+
+html[dir="rtl"] .services__header {
+  text-align: right;
+}
+
+html[dir="rtl"] .contact__text {
+  text-align: right;
+}
+
+html[dir="rtl"] .contact__item {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
