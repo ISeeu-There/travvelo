@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { inject, computed } from 'vue';
-import teamYassine from '../assets/team-yassine.png'
-import teamLina from '../assets/team-lina.png'
-import teamAmine from '../assets/team-amine.png'
-import teamSara from '../assets/team-sara.png'
-import teamRiad from '../assets/team-riad.png'
 import { useI18n } from '../i18n';
+import teamYassine from '../assets/team-yassine.png';
+import teamLina from '../assets/team-lina.png';
+import teamAmine from '../assets/team-amine.png';
+import teamSara from '../assets/team-sara.png';
+import teamRiad from '../assets/team-riad.png';
 
 const { t } = useI18n();
 const openCard = inject<(type: string, data: any, event: MouseEvent) => void>('openCard');

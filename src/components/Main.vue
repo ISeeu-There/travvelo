@@ -220,7 +220,7 @@ onUnmounted(() => {
             :class="{ active: locale === 'ar' }"
             class="lang-btn lang-btn-ar"
           >
-            عربي
+            AR
           </button>
         </div>
 
@@ -459,27 +459,42 @@ onUnmounted(() => {
 }
 
 /* Responsive adjustments for narrow viewports */
+@media (max-width: 640px) {
+  .nav-cta-wrap {
+    display: none;
+  }
+}
+
 @media (max-width: 480px) {
   .floating-navbar {
-    padding: 8px 12px;
+    padding: 6px 10px;
+    width: 96%;
+    top: 8px;
   }
   .brand-name {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
+  }
+  .brand-logo {
+    width: 18px;
+    height: 18px;
   }
   .nav-right-group {
-    gap: 8px;
+    gap: 6px;
   }
   .lang-switcher {
-    padding: 2px;
-    gap: 2px;
+    padding: 1.5px;
+    gap: 1.5px;
   }
   .lang-btn {
-    padding: 3px 8px;
-    font-size: 10px;
+    padding: 2px 6px;
+    font-size: 9px;
   }
-  .nav-premium-btn {
-    padding: 6px 12px;
-    font-size: 0.75rem;
+  .theme-toggle-btn-circle {
+    width: 26px;
+    height: 26px;
+  }
+  .theme-icon {
+    font-size: 0.9rem;
   }
 }
 

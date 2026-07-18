@@ -1423,9 +1423,9 @@ button {
 }
 
 /* ===========================
-   Extra Small Mobile (500px)
+   Extra Small Mobile (640px)
 =========================== */
-@media (max-width:500px){
+@media (max-width:640px){
   .services__grid,
   .programs__cards,
   .top-destinations__list {
