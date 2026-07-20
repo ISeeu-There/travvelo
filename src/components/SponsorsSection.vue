@@ -414,14 +414,28 @@ html.dark-mode .partner-initials {
 html[dir="rtl"] .sponsors-header {
   direction: rtl;
 }
+
+html[dir="rtl"] .marquee-wrapper,
+html[dir="rtl"] .marquee-row,
+html[dir="rtl"] .marquee-track {
+  direction: ltr !important;
+}
+
+html[dir="rtl"] .partner-card {
+  direction: rtl;
+}
+
 html[dir="rtl"] .partner-info {
   text-align: right;
 }
+
 html[dir="rtl"] .partner-desc {
   text-align: right;
 }
+
 html[dir="rtl"] .contract-status {
-  flex-direction: row-reverse;
+  display: inline-flex;
+  gap: 6px;
 }
 
 /* Responsive styles */

@@ -68,12 +68,12 @@ const translations: Record<Locale, Record<string, any>> = {
       explore: 'Explore'
     },
     hero: {
-      title1: 'Travel',
-      title2: 'More.',
-      title3: 'Live More.',
-      subtitle: 'Discover new places, meet new people, and collect unforgettable memories.',
-      exploreBtn: 'Explore Now',
-      travelers: 'Travelers'
+      title1: 'Umrah',
+      title2: 'Simplified.',
+      title3: 'Sacred Journeys.',
+      subtitle: 'Begin your spiritual pilgrimage with our curated Umrah packages. Premium accommodation, direct flights, and comprehensive guide support.',
+      exploreBtn: 'Explore Packages',
+      travelers: 'Pilgrims'
     },
     team: {
       title1: 'Our',
@@ -428,12 +428,12 @@ const translations: Record<Locale, Record<string, any>> = {
       explore: 'Explorer'
     },
     hero: {
-      title1: 'Voyager',
-      title2: 'Plus.',
-      title3: 'Vivre Plus.',
-      subtitle: 'Découvrez de nouveaux endroits, rencontrez de nouvelles personnes et collectionnez des souvenirs inoubliables.',
-      exploreBtn: 'Explorer maintenant',
-      travelers: 'Voyageurs'
+      title1: 'La Omra',
+      title2: 'Simplifiée.',
+      title3: 'Voyages Sacrés.',
+      subtitle: 'Commencez votre pèlerinage spirituel avec nos formules de Omra sur mesure. Hébergements d\'exception, vols directs et assistance complète.',
+      exploreBtn: 'Découvrir les Offres',
+      travelers: 'Pèlerins'
     },
     team: {
       title1: 'Notre',
@@ -788,12 +788,12 @@ const translations: Record<Locale, Record<string, any>> = {
       explore: 'استكشف'
     },
     hero: {
-      title1: 'سافر',
-      title2: 'أكثر.',
-      title3: 'وعش أكثر.',
-      subtitle: 'اكتشف أماكن جديدة، وقابل أناساً جدداً، واجمع ذكريات لا تُنسى.',
-      exploreBtn: 'استكشف الآن',
-      travelers: 'مسافر'
+      title1: 'رحلات العمرة',
+      title2: 'الميسّرة.',
+      title3: 'رحلة الروح.',
+      subtitle: 'ابدأ رحلتك الإيمانية مع باقات العمرة المتميزة. إقامة فاخرة، رحلات مباشرة، وتوجيه وإرشاد متكامل طوال فترة الرحلة.',
+      exploreBtn: 'استكشف الباقات',
+      travelers: 'معتمر'
     },
     team: {
       title1: 'فريق',
