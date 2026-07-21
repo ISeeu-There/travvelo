@@ -1,6 +1,6 @@
 {
   "name": "Tripora Travel",
-  "description": "An elegant bento-grid travel destination showcase with rich interactive sections.",
+  "description": "An elegant travel agency site with real-time package booking, multi-lingual translations (English/Arabic/French), and a comprehensive back-office admin dashboard to manage bookings, transactions, packages, destinations, team members, services, and partners.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

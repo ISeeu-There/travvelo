@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useI18n } from '../i18n';
+import { store as globalStore, addBooking as storeAddBooking } from '../store';
 
 const { t, locale } = useI18n();
 
@@ -142,9 +143,22 @@ const resetForm = () => {
 const handleBooking = () => {
   if (!pilgrimName.value || !pilgrimPhone.value) return;
   
-  // Generate booking reference
-  const randNum = Math.floor(1000 + Math.random() * 9000);
-  bookingRef.value = `UMR-2026-${randNum}`;
+  const pkg = packages.value.find(p => p.id === selectedPkgId.value);
+  const pkgName = pkg ? pkg.name : 'Unknown Package';
+
+  const newBk = storeAddBooking({
+    packageId: selectedPkgId.value || 1,
+    packageName: pkgName,
+    clientName: pilgrimName.value,
+    clientPhone: pilgrimPhone.value,
+    clientEmail: pilgrimEmail.value || undefined,
+    departureDate: preferredDate.value || new Date().toISOString().split('T')[0],
+    pilgrimsCount: numPilgrims.value,
+    roomPreference: sharingType.value,
+    notes: ''
+  });
+  
+  bookingRef.value = newBk.id;
   bookingConfirmed.value = true;
 };
 
@@ -276,30 +290,28 @@ const labels = computed(() => {
 });
 
 const packages = computed(() => {
-  if (locale.value === 'ar') {
-    return [
-      {
-        id: 1,
-        name: 'باقة العمرة الاقتصادية',
-        tagline: 'توفير متميز مع راحة وخدمة متكاملة',
-        price: '165,000 د.ج',
-        priceVal: '165,000 د.ج',
-        duration: '15 يومًا / 14 ليلة',
-        rating: '4.7',
-        reviews: '124 تقييم',
-        image: 'https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'أبراج الكسوة (★ ★ ★)',
-        makkahDist: '1200 متر عن الحرم (حافلات مجانية 24/7)',
-        madinahHotel: 'فندق الشرفة (★ ★ ★)',
-        madinahDist: '250 متر عن المسجد النبوي الشريف',
-        flight: 'الخطوط الجوية الجزائرية (رحلة مباشرة: الجزائر - جدة)',
-        itinerary: [
-          { day: 'اليوم 1', title: 'الوصول والاستقرار', desc: 'الوصول بمشيئة الله إلى مطار جدة الدولي، الانتقال إلى مكة المكرمة بالباص السياحي المريح، استلام الغرف في فندق أبراج الكسوة وأداء مناسك العمرة.' },
-          { day: 'اليوم 2 - 7', title: 'إقامة مكة المكرمة', desc: 'التفرغ للعبادة والصلاة في الحرم المكي الشريف، مع رحلة مخصصة لزيارة جبل ثور، جبل عرفات، ومزدلفة ومنى.' },
-          { day: 'اليوم 8', title: 'الانتقال إلى المدينة المنورة', desc: 'مغادرة مكة والانتقال إلى طيبة الطيبة عبر حافلاتنا الفاخرة، استلام الغرف والتشرف بالسلام على رسول الله ﷺ.' },
-          { day: 'اليوم 9 - 14', title: 'إقامة المدينة المنورة', desc: 'زيارة المعالم النبوية الشريفة (مسجد قباء، مقبرة شهداء أحد، جبل أحد)، والتمتع بالصلاة في الروضة الشريفة.' },
-          { day: 'اليوم 15', title: 'العودة إلى أرض الوطن', desc: 'الانتقال إلى مطار الأمير محمد بن عبد العزيز بالمدينة المنورة للعودة إلى الجزائر.' }
-        ],
+  return globalStore.packages.map(p => {
+    if (locale.value === 'ar') {
+      return {
+        id: p.id,
+        name: p.nameAr || p.name,
+        tagline: p.taglineAr || p.tagline,
+        price: p.priceVal || p.price,
+        priceVal: p.priceVal || p.price,
+        duration: p.durationAr || p.duration,
+        rating: p.rating || '5.0',
+        reviews: `${p.reviews || '1'} تقييم`,
+        image: p.image,
+        makkahHotel: p.makkahHotelAr || p.makkahHotel,
+        makkahDist: p.makkahDistAr || p.makkahDist,
+        madinahHotel: p.madinahHotelAr || p.madinahHotel,
+        madinahDist: p.madinahDistAr || p.madinahDist,
+        flight: p.flightAr || p.flight,
+        itinerary: p.itinerary.map(item => ({
+          day: item.dayAr || item.day,
+          title: item.titleAr || item.title,
+          desc: item.descAr || item.desc
+        })),
         included: [
           'تأشيرة العمرة الإلكترونية والتأمين الطبي الشامل',
           'تذاكر الطيران ذهابًا وإيابًا مع الخطوط الجوية الجزائرية',
@@ -308,266 +320,69 @@ const packages = computed(() => {
           'مرافقة إدارية ودينية مؤهلة طوال فترة الرحلة',
           'توزيع ماء زمزم المبارك وكتيب توجيهي للمعتمرين'
         ]
-      },
-      {
-        id: 2,
-        name: 'باقة العمرة المريحة (المميزة)',
-        tagline: 'إقامة فاخرة قريبة جداً من الحرمين الشريفين',
-        price: '245,000 د.ج',
-        priceVal: '245,000 د.ج',
-        duration: '15 يومًا / 14 ليلة',
-        rating: '4.9',
-        reviews: '238 تقييم',
-        image: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'سويس أوتيل مكة (★ ★ ★ ★ ★)',
-        makkahDist: 'مباشرة على ساحة الحرم المكي',
-        madinahHotel: 'بلمان زمزم المدينة (★ ★ ★ ★ ★)',
-        madinahDist: '50 متر فقط عن الحرم النبوي الشريف',
-        flight: 'الخطوط السعودية (رحلة مباشرة: الجزائر - المدينة المنورة)',
-        itinerary: [
-          { day: 'اليوم 1', title: 'الوصول المباشر لطيبة', desc: 'الهبوط بمطار المدينة المنورة، الانتقال الفاخر للفندق، استلام الغرف والسلام على سيد الخلق ﷺ.' },
-          { day: 'اليوم 2 - 7', title: 'إقامة المدينة المنورة المتميزة', desc: 'التمتع بالقرب الشديد من الحرم النبوي، أداء الصلوات في الروضة الشريفة (بموجب تصريح نسك)، والقيام بالمزارات النبوية.' },
-          { day: 'اليوم 8', title: 'الانتقال إلى مكة المكرمة', desc: 'الإحرام من الميقات (ذو الحليفة) والانتقال إلى مكة عبر باصات حديثة مكيفة، استلام الغرف في سويس أوتيل وأداء العمرة.' },
-          { day: 'اليوم 9 - 14', title: 'روحانية مكة الفاخرة', desc: 'الصلاة والعبادة أمام الكعبة المشرفة، جولات الإرشاد الديني، مع رحلات خاصة لآثار مكة المكرمة التاريخية.' },
-          { day: 'اليوم 15', title: 'العودة المباركة', desc: 'المغادرة من فندق مكة باتجاه مطار الملك عبد العزيز بجدة للعودة برعاية الله إلى الجزائر.' }
-        ],
-        included: [
-          'تأشيرة العمرة السريعة والتأمين الصحي المتكامل بحدود تغطية كاملة',
-          'رحلة طيران مباشرة على الخطوط السعودية',
-          'إقامة فاخرة 5 نجوم مع بوفيه إفطار يومي مفتوح',
-          'انتقالات ممتازة عبر حافلات VIP مريحة للغاية',
-          'مرشد ومطوف خاص لشرح مناسك العمرة والأدعية',
-          'هدايا فاخرة للمعتمرين (حقيبة ظهر، سجاد صلاة، وكتيب حصن المسلم)'
-        ]
-      },
-      {
-        id: 3,
-        name: 'الباقة الملكية VIP',
-        tagline: 'تجربة روحانية استثنائية لكبار الشخصيات بأعلى معايير الرفاهية',
-        price: '390,000 د.ج',
-        priceVal: '390,000 د.ج',
-        duration: '10 أيام / 9 ليالٍ',
-        rating: '5.0',
-        reviews: '92 تقييم',
-        image: 'https://images.unsplash.com/photo-1604999333679-b86d54738315?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'فندق فيرمونت برج الساعة مكة (★ ★ ★ ★ ★ ملكي)',
-        makkahDist: 'إطلالة كاملة ومباشرة على الكعبة المشرفة',
-        madinahHotel: 'أوبيروي المدينة الشريفة (★ ★ ★ ★ ★ فاخر)',
-        madinahDist: 'إطلالة مباشرة على الروضة الشريفة والساحة الشمالية',
-        flight: 'طيران الدرجة الأولى (الجزائر - جدة / المدينة - الجزائر)',
-        itinerary: [
-          { day: 'اليوم 1', title: 'استقبال كبار الشخصيات', desc: 'استقبال خاص في قاعة كبار الشخصيات بمطار جدة، الانتقال بسيارة GMC فاخرة خاصة إلى مكة المكرمة، التسكين في جناح مطلع على الكعبة المشرّفة وأداء العمرة بمرافقة مطوف خاص.' },
-          { day: 'اليوم 2 - 5', title: 'في حضرة الكعبة المشرفة', desc: 'التواجد في الجناح الملكي الفاخر الشامل للإفطار والعشاء الفاخرين، خدمات الغرف على مدار الساعة، وإرشاد خاص للزيارات الخاصة.' },
-          { day: 'اليوم 6', title: 'قطار الحرمين السريع الفخم', desc: 'الانتقال إلى المدينة المنورة عبر درجة رجال الأعمال بقطار الحرمين السريع، والاستقرار بفندق الأوبيروي الفاخر.' },
-          { day: 'اليوم 7 - 9', title: 'طيبة الطيبة بنبض ملكي', desc: 'التنعم بالعبادة والصلاة والتشرف بالسلام على رسول الله ﷺ وصاحبيه، حجز حصرى ومضمون لزيارة الروضة الشريفة.' },
-          { day: 'اليوم 10', title: 'توديع بسلام', desc: 'الانتقال بالسيارة الخاصة إلى مطار المدينة المنورة والصعود لرحلة العودة الفخمة للجزائر.' }
-        ],
-        included: [
-          'تأشيرة VIP سريعة الإصدار وتأمين طبي شامل متميز',
-          'تذاكر طيران للدرجة الأولى / رجال الأعمال مباشرة',
-          'إقامة في أجنحة فاخرة مطلة مباشرة على الكعبة والمسجد النبوي الشريفين',
-          'وجبات الإفطار والعشاء في بوفيهات الفنادق العالمية الراقية',
-          'مواصلات خاصة بـ GMC عائلية حديثة بين جميع المدن والمزارات',
-          'حجز مؤكد وتصاريح رسمية فورية لزيارة الروضة الشريفة وصلاة الفريضة',
-          'مرشد دينى مرافق ومطوّف خاص على مدار الساعة لتلبية كافة الطلبات'
-        ]
-      }
-    ];
-  } else if (locale.value === 'fr') {
-    return [
-      {
-        id: 1,
-        name: 'Formule Omra Économique',
-        tagline: 'Le meilleur rapport qualité-prix pour votre pèlerinage',
-        price: '165 000 DZD',
-        priceVal: '165 000 DZD',
-        duration: '15 Jours / 14 Nuits',
-        rating: '4.7',
-        reviews: '124 avis',
-        image: 'https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'Al Kiswah Towers (★ ★ ★)',
-        makkahDist: '1200m du Haram (Navette gratuite 24h/24, 7j/7)',
-        madinahHotel: 'Al Shourfah Hotel (★ ★ ★)',
-        madinahDist: '250m de Masjid an-Nabawi',
-        flight: 'Air Algérie (Vol direct Alger - Jeddah)',
-        itinerary: [
-          { day: 'Jour 1', title: 'Arrivée & Installation', desc: 'Arrivée à l\'aéroport de Jeddah, transfert à Makkah en bus climatisé confortable, installation à l\'hôtel Al Kiswah et accomplissement des rites de la Omra.' },
-          { day: 'Jour 2 - 7', title: 'Séjour à Makkah', desc: 'Temps libre pour la prière et la dévotion au Masjid al-Haram. Visite guidée des lieux saints (Mont Arafat, Mina, Jabal al-Nour).' },
-          { day: 'Jour 8', title: 'Transfert vers Médine', desc: 'Départ pour Médine la Radieuse en bus de tourisme premium. Arrivée, installation et salut au Prophète ﷺ.' },
-          { day: 'Jour 9 - 14', title: 'Séjour à Médine', desc: 'Prières à Masjid an-Nabawi et visites historiques (Mosquée de Quba, Mont Uhud, etc.). Entrée à la Rawdah Chérifale selon les permis Nusk.' },
-          { day: 'Jour 15', title: 'Retour au Pays', desc: 'Transfert vers l\'aéroport de Médine pour le vol de retour direct vers Alger.' }
-        ],
+      };
+    } else if (locale.value === 'fr') {
+      return {
+        id: p.id,
+        name: p.nameFr || p.name,
+        tagline: p.taglineFr || p.tagline,
+        price: p.priceVal || p.price,
+        priceVal: p.priceVal || p.price,
+        duration: p.durationFr || p.duration,
+        rating: p.rating || '5.0',
+        reviews: `${p.reviews || '1'} avis`,
+        image: p.image,
+        makkahHotel: p.makkahHotelFr || p.makkahHotel,
+        makkahDist: p.makkahDistFr || p.makkahDist,
+        madinahHotel: p.madinahHotelFr || p.madinahHotel,
+        madinahDist: p.madinahDistFr || p.madinahDist,
+        flight: p.flightFr || p.flight,
+        itinerary: p.itinerary.map(item => ({
+          day: item.dayFr || item.day,
+          title: item.titleFr || item.title,
+          desc: item.descFr || item.desc
+        })),
         included: [
           'Visa électronique Omra et assurance médicale complète',
-          'Billet d\'avion aller-retour avec Air Algérie',
+          'Billet d\'avion aller-retour avec la compagnie aérienne',
           'Hébergement dans les hôtels mentionnés (ou similaires)',
-          'Tous les transferts internes en bus modernes climatisés',
+          'Tous les transferts internes en bus de tourisme modernes climatisés',
           'Accompagnement administratif et religieux tout au long du séjour',
-          'Eau de Zamzam offerte et guide papier complet du pèlerin'
+          'Eau de Zamzam bénie offerte et guide du pèlerin complet'
         ]
-      },
-      {
-        id: 2,
-        name: 'Formule Omra Confort (Privilège)',
-        tagline: 'Un séjour d\'exception au plus près des Lieux Saints',
-        price: '245 000 DZD',
-        priceVal: '245 000 DZD',
-        duration: '15 Jours / 14 Nuits',
-        rating: '4.9',
-        reviews: '238 avis',
-        image: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'Swissôtel Makkah (★ ★ ★ ★ ★)',
-        makkahDist: 'Directement sur l\'esplanade du Haram',
-        madinahHotel: 'Pullman Zamzam Madinah (★ ★ ★ ★ ★)',
-        madinahDist: 'À seulement 50m de Masjid an-Nabawi',
-        flight: 'Saudi Arabian Airlines (Vol direct Alger - Médine)',
-        itinerary: [
-          { day: 'Jour 1', title: 'Arrivée Directe à Médine', desc: 'Atterrissage à Médine, accueil VIP à l\'aéroport, transfert de luxe et installation au Pullman Zamzam. Salut au Prophète ﷺ.' },
-          { day: 'Jour 2 - 7', title: 'Séjour à Médine', desc: 'Profitez de la proximité immédiate de la mosquée sacrée. Recueillement à la Rawdah (via application Nusk) et visites de Quba et Uhud.' },
-          { day: 'Jour 8', title: 'Trajet vers Makkah', desc: 'Sacralisation (Ihram) au Miqat, puis trajet vers Makkah en bus VIP. Installation au Swissôtel et accomplissement de la Omra.' },
-          { day: 'Jour 9 - 14', title: 'Dévotion à Makkah', desc: 'Prière et contemplation devant la Kaaba. Conseils religieux personnalisés et visites guidées approfondies.' },
-          { day: 'Jour 15', title: 'Retour Béni', desc: 'Départ de l\'hôtel vers l\'aéroport de Jeddah pour le vol direct de retour vers l\'Algérie.' }
-        ],
+      };
+    } else {
+      return {
+        id: p.id,
+        name: p.name,
+        tagline: p.tagline,
+        price: p.price,
+        priceVal: p.priceVal,
+        duration: p.duration,
+        rating: p.rating || '5.0',
+        reviews: `${p.reviews || '1'} reviews`,
+        image: p.image,
+        makkahHotel: p.makkahHotel,
+        makkahDist: p.makkahDist,
+        madinahHotel: p.madinahHotel,
+        madinahDist: p.madinahDist,
+        flight: p.flight,
+        itinerary: p.itinerary.map(item => ({
+          day: item.day,
+          title: item.title,
+          desc: item.desc
+        })),
         included: [
-          'Visa Omra express et assurance médicale haut de gamme',
-          'Billet d\'avion sur vol régulier direct de Saudi Arabian Airlines',
-          'Hébergement 5 étoiles avec petit-déjeuner buffet quotidien',
-          'Transferts inter-villes en bus VIP ultra-confortables',
-          'Guide-accompagnateur et conférencier bilingue',
-          'Kit pèlerin premium (sac à dos, tapis de prière, invocations)'
+          'Electronic Umrah Visa & comprehensive medical insurance',
+          'Round-trip flight tickets with selected airline',
+          'Accommodation in specified luxury or standard hotels',
+          'All domestic transfers in modern air-conditioned VIP coaches',
+          'Qualified administrative & religious guides throughout the journey',
+          'Blessed Zamzam water gift box & guide booklets'
         ]
-      },
-      {
-        id: 3,
-        name: 'Formule Royale VIP',
-        tagline: 'Une expérience spirituelle sublime et luxueuse',
-        price: '390 000 DZD',
-        priceVal: '390 000 DZD',
-        duration: '10 Jours / 9 Nuits',
-        rating: '5.0',
-        reviews: '92 avis',
-        image: 'https://images.unsplash.com/photo-1604999333679-b86d54738315?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'Fairmont Makkah Clock Royal Tower (★ ★ ★ ★ ★ Royal)',
-        makkahDist: 'Vue panoramique complète sur la Sainte Kaaba',
-        madinahHotel: 'The Oberoi Madinah (★ ★ ★ ★ ★ Luxe)',
-        madinahDist: 'Vue directe sur la Rawdah et le dôme vert',
-        flight: 'Vols directs en Première Classe ou Classe Affaires',
-        itinerary: [
-          { day: 'Jour 1', title: 'Accueil VIP & Suite Royale', desc: 'Accueil au salon d\'honneur de l\'aéroport, transfert en GMC privée haut de gamme vers Makkah, installation dans votre suite avec vue Kaaba et Omra accompagnée d\'un Mutawwif privé.' },
-          { day: 'Jour 2 - 5', title: 'Dévotion Royale à Makkah', desc: 'Prière en suite ou au Haram. Pension complète gourmet, service de conciergerie 24h/24 et visites archéologiques privées.' },
-          { day: 'Jour 6', title: 'Train Rapide Al-Haramain', desc: 'Transfert en Première Classe à bord du train à grande vitesse vers Médine. Installation à l\'hôtel The Oberoi.' },
-          { day: 'Jour 7 - 9', title: 'Sérénité Royale à Médine', desc: 'Recueillement exclusif, visites sur mesure avec guide privé, permis Rawdah garanti.' },
-          { day: 'Jour 10', title: 'Départ en toute quiétude', desc: 'Transfert en véhicule privé vers l\'aéroport de Médine pour votre vol de retour de prestige.' }
-        ],
-        included: [
-          'Visa VIP prioritaire et couverture médicale internationale maximale',
-          'Vols directs en Première Classe ou Business',
-          'Hébergement de prestige en suites avec vues panoramiques Haram/Kaaba',
-          'Demi-pension ou pension complète dans les restaurants gastronomiques',
-          'Véhicule privé (type GMC) à votre disposition exclusive durant le séjour',
-          'Accès Garanti de confiance pour la Rawdah et le Haram',
-          'Accompagnement 24h/24 par un guide Mutawwif et un majordome dédié'
-        ]
-      }
-    ];
-  } else {
-    return [
-      {
-        id: 1,
-        name: 'Economic Umrah Package',
-        tagline: 'Premium value, ultimate peace of mind, and direct flights',
-        price: '$1,250',
-        priceVal: '165,000 DZD',
-        duration: '15 Days / 14 Nights',
-        rating: '4.7',
-        reviews: '124 reviews',
-        image: 'https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'Al Kiswah Towers (★ ★ ★)',
-        makkahDist: '1200m from Haram (Free 24/7 dedicated Shuttle)',
-        madinahHotel: 'Al Shourfah Hotel (★ ★ ★)',
-        madinahDist: '250m from Masjid an-Nabawi',
-        flight: 'Air Algérie (Direct Flight Algiers - Jeddah)',
-        itinerary: [
-          { day: 'Day 1', title: 'Arrival & Installation', desc: 'Land at Jeddah Airport, direct comfortable air-conditioned transfer to Makkah, check-in at Al Kiswah Towers, and perform your Umrah rites with our local representative.' },
-          { day: 'Day 2 - 7', title: 'Makkah Devotion & Prayers', desc: 'Spend blessed days praying at Masjid al-Haram. Take part in our organized historical Ziyarat (Mount Arafat, Mina, Muzdalifah, Mount Al-Noor).' },
-          { day: 'Day 8', title: 'Transfer to Madinah', desc: 'Depart Makkah on our private air-conditioned coach to Al Madinah Al Munawwarah. Check-in at Al Shourfah Hotel and salute the Beloved Prophet ﷺ.' },
-          { day: 'Day 9 - 14', title: 'Madinah Peace & Ziyarat', desc: 'Enjoy close access to Masjid an-Nabawi. We guide you to historical sights including Quba Mosque, Mount Uhud, and secure Rawdah permits via the Nusk app.' },
-          { day: 'Day 15', title: 'Journey Home', desc: 'Transfer to Prince Mohammad bin Abdulaziz Airport in Madinah for your direct return flight to Algiers.' }
-        ],
-        included: [
-          'Electronic Umrah Visa & comprehensive health insurance',
-          'Round-trip direct flights with Air Algérie',
-          'Hotel accommodation as listed (or equivalent high-quality)',
-          'All internal transfers in modern, air-conditioned tour coaches',
-          'Expert administrative and spiritual guides throughout the trip',
-          '5L Zamzam water bottle allocation and a detailed pocket guidebook'
-        ]
-      },
-      {
-        id: 2,
-        name: 'Comfort Umrah Package (Privilege)',
-        tagline: 'Luxury stay within steps of the sacred mosque courtyards',
-        price: '$1,850',
-        priceVal: '245,000 DZD',
-        duration: '15 Days / 14 Nights',
-        rating: '4.9',
-        reviews: '238 reviews',
-        image: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'Swissôtel Makkah (★ ★ ★ ★ ★)',
-        makkahDist: 'Directly on the Haram courtyard',
-        madinahHotel: 'Pullman Zamzam Madinah (★ ★ ★ ★ ★)',
-        madinahDist: 'Just 50 meters from Masjid an-Nabawi',
-        flight: 'Saudi Arabian Airlines (Direct Flight Algiers - Madinah)',
-        itinerary: [
-          { day: 'Day 1', title: 'Direct Landing in Madinah', desc: 'Enjoy a direct flight to Madinah. Enjoy VIP airport assistance, transfer to the 5-star Pullman Zamzam, and salute the Holy Prophet ﷺ.' },
-          { day: 'Day 2 - 7', title: 'Blessed Days in Madinah', desc: 'Experience the beautiful serenity of Masjid an-Nabawi with 5-star comfort. Pay your respects in the Rawdah Chérifale and enjoy detailed local historic tours.' },
-          { day: 'Day 8', title: 'Ihram & Makkah Transition', desc: 'Perform your Ihram at Dhul Hulaifah Miqat, and ride our premium VIP coach to Makkah. Check-in at Swissôtel and perform Umrah.' },
-          { day: 'Day 9 - 14', title: 'Makkah Splendor & Haram Vibe', desc: 'Pray right on the Haram esplanade. Enjoy direct elevator access from the clock tower. Guided excursions to deep historic sites of Makkah.' },
-          { day: 'Day 15', title: 'Return in Blessing', desc: 'Depart Swissôtel Makkah directly to King Abdulaziz Airport in Jeddah for your direct Saudia flight back to Algiers.' }
-        ],
-        included: [
-          'Fast-track Umrah Visa and premium full-coverage health insurance',
-          'Direct flights on regular schedules with Saudi Arabian Airlines',
-          '5-star luxury hotel accommodation with premium daily open-buffet breakfast',
-          'All inter-city transitions in deluxe VIP coaches',
-          'Highly experienced, bilingual spiritual guides & scholars',
-          'Premium pilgrim kit (backpack, plush prayer mat, dua book)'
-        ]
-      },
-      {
-        id: 3,
-        name: 'VIP Gold Royal Package',
-        tagline: 'An elite spiritual journey of unparalleled luxury and peace',
-        price: '$2,950',
-        priceVal: '390,000 DZD',
-        duration: '10 Days / 9 Nights',
-        rating: '5.0',
-        reviews: '92 reviews',
-        image: 'https://images.unsplash.com/photo-1604999333679-b86d54738315?auto=format&fit=crop&w=600&q=80',
-        makkahHotel: 'Fairmont Makkah Clock Royal Tower (★ ★ ★ ★ ★ Royal)',
-        makkahDist: 'Full panoramic view of the Holy Kaaba',
-        madinahHotel: 'The Oberoi Madinah (★ ★ ★ ★ ★ Ultra Luxury)',
-        madinahDist: 'Front-row view of the Green Dome & Rawdah esplanade',
-        flight: 'First Class or Business Class Direct Flights',
-        itinerary: [
-          { day: 'Day 1', title: 'VIP Reception & Royal Check-In', desc: 'VIP private lounge greeting at Jeddah Airport. Travel in an exclusive GMC vehicle to Makkah. Settle into your Kaaba-view suite and perform Umrah with a private Mutawwif scholar.' },
-          { day: 'Day 2 - 5', title: 'In the Presence of the Kaaba', desc: 'Indulge in royal comfort with 24/7 private room service, gourmet full board, and custom private historical trips around sacred sites.' },
-          { day: 'Day 6', title: 'Haramain High-Speed Bullet Train', desc: 'Travel in Business Class luxury on the high-speed rail to Madinah. Direct luxury transfer to the prestigious Oberoi Hotel.' },
-          { day: 'Day 7 - 9', title: 'Sovereign Peace in Madinah', desc: 'Pray with panoramic views of Masjid an-Nabawi. Direct Rawdah permit pre-booked and guaranteed VIP access.' },
-          { day: 'Day 10', title: 'Farewell & Return', desc: 'Direct private luxury transfer to Madinah Airport. Embark on your premium First Class flight back to Algiers.' }
-        ],
-        included: [
-          'Immediate VIP Visa issuance with max medical & travel cover',
-          'First Class or Business Class round-trip tickets',
-          'Sovereign suites with breathtaking panoramic views of Kaaba & Prophet\'s Mosque',
-          'Gourmet half-board/full-board dining at world-class hotel restaurants',
-          'Private deluxe GMC SUV at your exclusive service 24/7 during the entire tour',
-          'Guaranteed official permits for Rawdah entry',
-          'Around-the-clock accompaniment by a dedicated Mutawwif scholar and butler'
-        ]
-      }
-    ];
-  }
+      };
+    }
+  });
 });
 
 const currentActivePackage = computed(() => {

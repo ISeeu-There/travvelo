@@ -10,18 +10,20 @@ import ContactSection from "./ContactSection.vue";
 import SponsorsSection from "./SponsorsSection.vue";
 import ExpandedCardModal from "./ExpandedCardModal.vue";
 import { useI18n } from "../i18n";
+import Dashboard from "./Dashboard.vue";
 
 const { locale, setLocale, t } = useI18n();
 
 const isDark = ref(false);
+const currentView = ref<'website' | 'dashboard'>('website');
 
 const toggleTheme = () => {
   isDark.value = !isDark.value;
   if (isDark.value) {
-    document.documentElement.classList.add('dark-mode');
+    document.documentElement.classList.add('dark-mode', 'dark');
     localStorage.setItem('theme', 'dark');
   } else {
-    document.documentElement.classList.remove('dark-mode');
+    document.documentElement.classList.remove('dark-mode', 'dark');
     localStorage.setItem('theme', 'light');
   }
 };
@@ -122,10 +124,10 @@ onMounted(() => {
   const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
     isDark.value = true;
-    document.documentElement.classList.add('dark-mode');
+    document.documentElement.classList.add('dark-mode', 'dark');
   } else {
     isDark.value = false;
-    document.documentElement.classList.remove('dark-mode');
+    document.documentElement.classList.remove('dark-mode', 'dark');
   }
 
   // Smooth page intro timeline
@@ -224,8 +226,15 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <div class="nav-cta-wrap">
-          <a href="#contact" @click="smoothScrollTo('contact', $event)" class="nav-premium-btn">
+        <div class="nav-cta-wrap flex items-center gap-2">
+          <button 
+            @click="currentView = currentView === 'website' ? 'dashboard' : 'website'"
+            class="px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 border"
+            :class="currentView === 'dashboard' ? 'bg-amber-400 border-amber-400 text-slate-900 hover:bg-amber-500' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 dark:text-slate-100'"
+          >
+            {{ currentView === 'website' ? '🔑 Admin' : '🌐 Website' }}
+          </button>
+          <a href="#contact" @click="smoothScrollTo('contact', $event)" class="nav-premium-btn" v-if="currentView === 'website'">
             {{ t('nav.consult') }}
           </a>
         </div>
@@ -235,7 +244,7 @@ onUnmounted(() => {
     <div class="scroll-progress-bar" :style="{ width: scrollProgress + '%' }"></div>
   </header>
 
-  <div class="parent">
+  <div v-if="currentView === 'website'" class="parent">
     <!-- Section 1: Our Team -->
     <div class="div1">
        <TeamSection />
@@ -267,8 +276,12 @@ onUnmounted(() => {
     </div>
   </div>
 
+  <div v-else class="max-w-7xl mx-auto px-4 md:px-8 pt-36 pb-24 mt-4">
+    <Dashboard />
+  </div>
+
   <!-- Animated Sponsors/Partners Section -->
-  <SponsorsSection />
+  <SponsorsSection v-if="currentView === 'website'" />
 
   <!-- Fullscreen GSAP Expansion Overlay detailed pages -->
   <ExpandedCardModal :activeCard="activeCard" @close="closeCard" />
@@ -283,15 +296,22 @@ onUnmounted(() => {
   transform: translateX(-50%);
   width: 95%;
   max-width: 1200px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(229, 224, 216, 0.6);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(229, 224, 216, 0.65);
   border-radius: 30px;
   z-index: 900;
   padding: 10px 24px;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s, border-color 0.3s;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
   overflow: hidden; /* Clips the inner progress bar to match the rounded pill shape perfectly */
+}
+
+:global(.dark) .floating-navbar,
+:global(.dark-mode) .floating-navbar {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(51, 65, 85, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .floating-navbar.navbar-hidden {
@@ -448,10 +468,22 @@ onUnmounted(() => {
   color: var(--color-dark);
 }
 
+:global(.dark) .lang-btn:hover,
+:global(.dark-mode) .lang-btn:hover {
+  color: #F5A623;
+}
+
 .lang-btn.active {
   background: var(--color-dark);
   color: var(--color-white);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+:global(.dark) .lang-btn.active,
+:global(.dark-mode) .lang-btn.active {
+  background: #F5A623 !important;
+  color: #0b1120 !important;
+  box-shadow: 0 2px 6px rgba(245, 166, 35, 0.25);
 }
 
 .lang-btn-ar {
